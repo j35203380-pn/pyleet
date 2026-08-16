@@ -1,10 +1,12 @@
-from config import Settings
+from config import settings
 from sqlalchemy.orm import  DeclarativeBase,Mapped,mapped_column
 from sqlalchemy.ext.asyncio import async_sessionmaker,AsyncSession,create_async_engine
 
 
-DATABASE_URL = "sqlite+aiosqlite:///./test.db"
-#DATABASE_URL=Settings.DATABASE_URL
+DATABASE_URL=settings.DATABASE_URL
+
+#это для проверки потом нужно удлаить
+#DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
 engine=create_async_engine(DATABASE_URL)
 
