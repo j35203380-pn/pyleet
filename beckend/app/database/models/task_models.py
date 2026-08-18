@@ -22,8 +22,7 @@ class Task(Base):
     id : Mapped[pk]
     name : Mapped[str]
     seller_id : Mapped[int] = mapped_column(ForeignKey('sellers.id', ondelete="CASCADE"))
-    text : Mapped[str] = mapped_column(Text)
-    proviso_id : Mapped[int] = mapped_column(ForeignKey('provision.id'),unique=True)
+    proviso_id : Mapped[int] = mapped_column(ForeignKey('provision.id',ondelete='CASCADE'),unique=True)
 
     seller : Mapped["Seller"] = relationship(back_populates='tasks')
     proviso : Mapped['Proviso'] = relationship(back_populates='task')
@@ -39,7 +38,7 @@ class Proviso(Base):
     __tablename__ = 'provision'
 
     id : Mapped[pk]
-    
+    text : Mapped[str] = mapped_column(Text)
     solution : Mapped[Any | None] = mapped_column(json_type, nullable=True)
 
     task : Mapped['Task'] = relationship(back_populates='proviso',

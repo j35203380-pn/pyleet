@@ -1,41 +1,72 @@
-from app.database.shemas.auth_shemas import UserLogin,UserPost,ToeknPayload,Token
+from app.database.shemas.auth_shemas import (UserLogin,UserPost,
+                                             ToeknPayload,Token,
+                                             Bayer as BayerPost,
+                                             Seller as SellerPost)
 from app.database.db import get_db,AsyncSession
-from fastapi import APIRouter,Depends,HTTPException
+from fastapi import APIRouter,Depends,HTTPException,status
 from typing import Annotated
 from fastapi.security import OAuth2PasswordRequestForm
-from app.database.models.auth_models import User_auth as User
+from app.database.models import User_auth as User,Seller,Buyer
 from app.auth.auth import hashed,verifi,create_token,oauth_shemas
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 
 router=APIRouter(prefix='/auth')
 
+GetDB=Annotated[AsyncSession,Depends(get_db)]
 
-
-@router.post('/registr')
-async def registration(user: UserPost,db: AsyncSession=Depends(get_db)):
+@router.post('/registr/bayer')
+async def registration(user: BayerPost,db: GetDB):
     password_hesh=hashed(user.password)
     async with db.begin():
         new_us=User(name=user.name,nik_name=user.nik_name, 
-                    role=user.role, email=user.email,password=password_hesh)
+                    role=user.role, email=user.email,
+                    password=password_hesh,buyers=Buyer())
         db.add(new_us)
-        return {'status' : 200, "detail" : "Успешно"}
+        return status.HTTP_201_CREATED
+
+
+
+@router.post('/registr/seller')
+async def Registration_sellers(user: SellerPost,db: GetDB):
+    password_hesh=hashed(user.password)
+    async with db.begin():
+        new_us =User(
+            name=user.name,nik_name=user.nik_name,
+            role=user.role, email=user.email,
+            password=password_hesh,
+            sellers=Seller(inn=user.inn))
+        db.add(new_us)
+        return status.HTTP_201_CREATED
+
+
+
+
+
+
 
 
 
 @router.post('/login',include_in_schema=True)
 async def login(user: Annotated[OAuth2PasswordRequestForm,Depends()],
                 db: AsyncSession=Depends(get_db)):
-    user_=await db.execute(select(User).where(User.nik_name == user.username))
-    id=user_.scalars().first()
-    if not user_:
+    user_=await db.execute(select(User).options(
+                            joinedload(User.sellers),joinedload(User.buyers))
+                           .where(User.nik_name == user.username))
+    id=user_.unique().scalars().first()
+    if not id:
         raise HTTPException (status_code=403,detail="Пользователь не найден")
 
     passwords=verifi(id.password, user.password)
+
     if not passwords:
         raise HTTPException (status_code=403,detail="неверный пароль")
 
-    token=create_token(user_id=id.id,role=id.role,token_type= 'access',expires_delta=30)
+    
+    token=create_token(user_id=id.id,role=id.role,
+                       token_type= 'access',expires_delta=30,
+                       seller_id=id.sellers.id,buyer_id=id.buyers.id)
     if not token:
         raise HTTPException(status_code=404,detail='Пользователь не найден')    
 

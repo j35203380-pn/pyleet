@@ -1,6 +1,8 @@
 from pathlib import Path
 from pydantic_settings import BaseSettings,SettingsConfigDict
 from pydantic import (Field)
+from enum import Enum
+
 
 BASE_DIR=Path(__file__).resolve().parent.parent
 
@@ -17,6 +19,11 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD : str
     POSTGRES_NAME : str
     POSTGRES_PORT : int
+
+    REDIS_HOST : str
+    REDIS_USER: str
+    REDIS_PORT: int
+    REDIS_PASSWORD: str
 
 
     secret_key_path : str = Field(validation_alias='JWT_SECRET_KEY')
@@ -38,7 +45,14 @@ class Settings(BaseSettings):
     def DATABASE_URL(self):
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_NAME}"
 
-
+    @property
+    def REDISE_URL(self):
+        return f'redis://{self.REDIS_USER}:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}'
 
 
 settings=Settings()
+
+
+class Role(str,Enum):
+    SELLER='seller'
+    BAYER='buyer'

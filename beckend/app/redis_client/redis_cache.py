@@ -27,7 +27,7 @@ class RedisCache:
         return f"{self._prefix}:{enum_id}"
 
 
-
+    @property
     def ttl_(self):
         return randint(self._ttl-3,self._ttl+3)
 
@@ -36,7 +36,7 @@ class RedisCache:
     async def set_cache(self, enum_id: str|int, pow: BaseModel):
         key= self.cache_key(enum_id)
         
-        await self._redis.set(key,pow.model_dump_json(), ex=self.ttl_())
+        await self._redis.set(key,pow.model_dump_json(), ex=self.ttl_)
 
 
 
@@ -46,7 +46,7 @@ class RedisCache:
 
             for enum_id,por in sl.items():
                 key= self.cache_key(enum_id)
-                await pipe.set(key,TypeAdapter(Any).dump_json(por),ex=self.ttl_())
+                await pipe.set(key,TypeAdapter(Any).dump_json(por),ex=self.ttl_)
 
             await pipe.execute()
 
@@ -58,8 +58,7 @@ class RedisCache:
         key= self.cache_key(enum_id)
         cash = await self._redis.get(key)
         if cash:
-            await self._redis.expire(key, self.ttl_())
-
+            
             if model:
                 return model.model_validate_json(cash)
 
@@ -88,7 +87,7 @@ class RedisCache:
 
 
     async def cache_del_prefix(self):
-        'удаляет все кеши префикса'
+        'удаляет все кеши по  префиксу'
 
         cash_delet=[]
 
@@ -105,7 +104,7 @@ class RedisCache:
         if cash_delet:
             await self._redis.unlink(*cash_delet)
 
-          
+       
     async def cache_del_key(self):
         cash_delet=[]
 

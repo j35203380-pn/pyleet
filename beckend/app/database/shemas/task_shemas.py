@@ -1,18 +1,17 @@
 from pydantic import BaseModel,ConfigDict
 from datetime import datetime
 
-class TaskPost(BaseModel):
-
-    seller_id : int
-    text : str 
-    proviso_id : int
-
-    
 
 
 class ProvisoPost(BaseModel):
+    text:str
     solution : str
 
+
+class TaskPost(BaseModel):
+
+    name: str
+    
     
 
 class ProvisoGet(BaseModel):

@@ -41,6 +41,12 @@ class UserPost(BaseModel):
             raise ValueError("Ведены не существующие данные")
         return r
 
+class Seller(UserPost):
+    inn: int
+
+class Bayer(UserPost):
+    pass
+
 class UserLogin(BaseModel):
     email : EmailStr
     password : str

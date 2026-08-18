@@ -2,12 +2,8 @@ from pydantic import BaseModel,ConfigDict
 from datetime import datetime
 
 
-class TaskSellersPost(BaseModel):
 
-    text : str 
-    proviso_id : int
   
-
 
 class ProvisoPost(BaseModel):
     solution : str

@@ -17,6 +17,7 @@ class Seller(Base):
     __tablename__ = 'sellers'
 
     id : Mapped[pk]
+    inn : Mapped[int]
     user_id : Mapped[int]=mapped_column(ForeignKey('users.id'))
     create_date : Mapped[datetime] = mapped_column(
                                     server_default=func.now()) 
