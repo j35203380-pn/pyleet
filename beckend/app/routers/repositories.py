@@ -1,13 +1,11 @@
 from app.database.db import AsyncSession
 from pydantic import BaseModel
-from sqlalchemy import insert,select,and_,update
+from sqlalchemy import insert,select,and_,update,delete
 from sqlalchemy.orm import joinedload
-from app.database.shemas.task_shemas import TaskPost,CommentsPost,ProvisoPost
+from app.database.shemas.task_shemas import TaskPost,CommentsPost,ProvisoPost,TaskPatch
 from fastapi import status,HTTPException
 from app.exceptions import TaskNotFoundError
-from app.database.models import (Proviso,Task,
-                                 User_auth as User,
-                                 Seller,Comments)
+from app.database.models import (Proviso,Task,User_auth as User,Seller,Comments)
 
 
 
@@ -41,7 +39,7 @@ class UserRepositories:
 
             com=await self._db.execute(
                 insert(Comments)
-                .values(**new).returning(Comments.id))
+                .values(**new).returning(Comments))
             
             comm=com.scalars().first()
         return comm
@@ -49,39 +47,46 @@ class UserRepositories:
 
 
     async def UpdateTask(self, task_id, 
-                         seller_id,task: TaskPost):
+                         seller_id,task: TaskPost|TaskPatch):
 
-        update_date=task.model_dump(exclude_unset=True)
-
+        update_name=task.model_dump(exclude_unset=True)
         async with self._db.begin():
-                
-            task_new=await self._db.execute(
-                select(Task)
-                .options(
-                    joinedload(Task.proviso)                
-                )
-                .where(and_(
-                    Task.id==task_id,Task.seller_id==seller_id)
-            ))
-            new=task_new.scalars().first()
+            new=await self._db.execute(
+                        select(Task).options(joinedload(Task.proviso))
+                        .where(and_(
+                                Task.id==task_id,seller_id==seller_id
+                        ))
+            )
+            t=new.scalars().first()
 
-            if new is None:
+            if not t:
                 raise TaskNotFoundError()
             
-            proviso_data=update_date.pop('proviso')
+            if 'name' in update_name:
+                t.name=task.name
 
-            for name,x in update_date.items():
-                if hasattr(new,name):
-                    setattr(new,name,x)
+            if proviso_update:=update_name.get('proviso',None):
+                
+                for name,x in proviso_update.items():
+                    if hasattr(t.proviso,name):
+                        setattr(t.proviso,name,x)
 
-            for name, x in proviso_data.items():
-                if hasattr(new.proviso,name):
-                    setattr(new.proviso,name,x)
+        return t
 
-        return new
 
+
+    async def DeleteTask(self,task_id: int,seller_id: int):
+
+        async with self._db.begin():
+            row=await self._db.execute(
+                delete(Task)
+                .where(and_(
+                    Task.id==task_id,Task.seller_id==seller_id)
+                ))
+        if row.rowcount == 0:
+            raise TaskNotFoundError()
+        return status.HTTP_200_OK
         
 
-            
+    
 
-   

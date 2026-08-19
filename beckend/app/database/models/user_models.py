@@ -1,6 +1,6 @@
 from app.database.db import Base
 from sqlalchemy.orm import Mapped,mapped_column,relationship
-from sqlalchemy import ForeignKey,Enum,func,Text,JSON
+from sqlalchemy import ForeignKey,Enum,func,Text,JSON,DateTime
 from typing import Annotated,Any
 from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime
@@ -18,12 +18,12 @@ class Seller(Base):
 
     id : Mapped[pk]
     inn : Mapped[int]
-    user_id : Mapped[int]=mapped_column(ForeignKey('users.id'))
-    create_date : Mapped[datetime] = mapped_column(
-                                    server_default=func.now()) 
-    updated_at : Mapped[datetime] = mapped_column(
-                                    server_default=func.now(),
-                                    onupdate=func.now())
+    user_id : Mapped[int]=mapped_column(ForeignKey('users.id'),index=True)
+    create_date : Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                                server_default=func.now()) 
+    updated_at : Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                                server_default=func.now(),
+                                                onupdate=func.now())
     user : Mapped['User_auth'] = relationship(back_populates='sellers')
     tasks : Mapped[list['Task']] = relationship(back_populates='seller')
 
@@ -34,7 +34,7 @@ class Buyer(Base):
     __tablename__ = 'buyers'
 
     id : Mapped[pk]
-    user_id : Mapped[int]=mapped_column(ForeignKey("users.id"))
+    user_id : Mapped[int]=mapped_column(ForeignKey("users.id"), index=True)
     
     user : Mapped['User_auth'] = relationship(back_populates='buyers')
 
@@ -45,10 +45,11 @@ class TaskSolution(Base):
     __tablename__ = 'task_solution'
 
     id : Mapped[pk]
-    buyer_id : Mapped[int] = mapped_column(ForeignKey('buyers.id',ondelete='CASCADE'))
-    task_id : Mapped[int] = mapped_column(ForeignKey('tasks.id'))
+    buyer_id : Mapped[int] = mapped_column(ForeignKey('buyers.id',ondelete='CASCADE'),index=True)
+    task_id : Mapped[int] = mapped_column(ForeignKey('tasks.id'),index=True)
     content : Mapped[Any] = mapped_column(json_type, nullable=False)
-    creadet_at : Mapped[datetime] = mapped_column(server_default=func.now())
+    creadet_at : Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                                  server_default=func.now())
 
     buyer : Mapped['Buyer'] = relationship(back_populates='solutions')
     task : Mapped['Task'] = relationship(back_populates='solutions')

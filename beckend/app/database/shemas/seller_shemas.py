@@ -5,9 +5,6 @@ from datetime import datetime
 
   
 
-class ProvisoPost(BaseModel):
-    solution : str
-
     
 
 class ProvisoGet(BaseModel):
@@ -16,6 +13,8 @@ class ProvisoGet(BaseModel):
     task : str
 
     model_config = ConfigDict(from_attributes=True)
+
+
 
 class TaskGet(BaseModel):
     id : int
@@ -30,18 +29,5 @@ class TaskGet(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-class CommentsPost(BaseModel):
-
-    task_id : int
-    comment: str
 
     
-
-class CommetnsGet(BaseModel):
-    id : int
-    buyer_id : int
-    task_id : int
-    comment: str
-    created_at : datetime
-
-    model_config= ConfigDict(from_attributes=True)

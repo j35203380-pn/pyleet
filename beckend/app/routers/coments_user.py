@@ -9,11 +9,12 @@ from app.routers.repositories import UserRepositories
 
 
 #для проверки доступа 
-is_sellers = ReschePoints(Role.SELLER,Role.BAYER)
+is_roles = ReschePoints(Role.SELLER,Role.BAYER)
 
 
 routers = APIRouter(prefix='/coments',
-                   dependencies=[Depends(is_sellers)])
+                    tags=["Комменты"],
+                    dependencies=[Depends(is_roles)])
 
 
 
@@ -28,11 +29,11 @@ PostDb = Annotated[UserRepositories,Depends(connect_db)]
 
 
 
-@routers.post('/{task_id}',status_code=status.HTTP_201_CREATED)
+@routers.post('/task/{task_id}',status_code=status.HTTP_201_CREATED)
 async def add_comment(task_id: int, comments: CommentsPost,
                       user: CurrenUser, db:PostDb):
 
-    await db.AddComments(comments=comments, user_id=user['id'], task_id=task_id)
+    return await db.AddComments(comments=comments, user_id=user['id'], task_id=task_id)
 
 
 

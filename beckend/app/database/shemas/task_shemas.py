@@ -7,12 +7,23 @@ class ProvisoPost(BaseModel):
     text:str
     solution : str
 
+    model_config=ConfigDict(from_attributes=True)
 
 class TaskPost(BaseModel):
-
     name: str
     proviso: ProvisoPost
     
+
+class ProvisoPatch(BaseModel):
+    text: str|None=None
+    solution: str|None=None
+
+    model_config=ConfigDict(from_attributes=True)
+    
+class TaskPatch(BaseModel):
+    name: str|None= None
+    proviso:ProvisoPatch|None=None
+
 
 class ProvisoGet(BaseModel):
     id : int

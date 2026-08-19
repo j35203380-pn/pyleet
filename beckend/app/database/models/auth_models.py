@@ -1,6 +1,6 @@
 from app.database.db import Base
 from sqlalchemy.orm import Mapped,mapped_column,relationship
-from sqlalchemy import Enum,func
+from sqlalchemy import Enum,func,DateTime
 from typing import Annotated
 import enum
 from datetime import datetime
@@ -28,9 +28,9 @@ class User_auth(Base):
     email : Mapped[str] = mapped_column(unique=True)
     password : Mapped[str]
 
-    create_date : Mapped[datetime] = mapped_column(
+    create_date : Mapped[datetime] = mapped_column(DateTime(timezone=True),
                                     server_default=func.now()) 
-    updated_at : Mapped[datetime] = mapped_column(
+    updated_at : Mapped[datetime] = mapped_column(DateTime(timezone=True),
                                     server_default=func.now(),
                                     onupdate=func.now())
     sellers : Mapped['Seller'] = relationship(back_populates='user')

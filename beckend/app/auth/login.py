@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 
-router=APIRouter(prefix='/auth')
+router=APIRouter(prefix='/auth',tags=["Авторизация и Вход"])
 
 GetDB=Annotated[AsyncSession,Depends(get_db)]
 
