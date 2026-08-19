@@ -63,10 +63,11 @@ async def login(user: Annotated[OAuth2PasswordRequestForm,Depends()],
     if not passwords:
         raise HTTPException (status_code=403,detail="неверный пароль")
 
-    
+    buyer_id=id.buyers.id if id.buyers else None
+    seller_id=id.sellers.id if id.sellers else None
     token=create_token(user_id=id.id,role=id.role,
                        token_type= 'access',expires_delta=30,
-                       seller_id=id.sellers.id,buyer_id=id.buyers.id)
+                       seller_id=seller_id,buyer_id=buyer_id)
     if not token:
         raise HTTPException(status_code=404,detail='Пользователь не найден')    
 

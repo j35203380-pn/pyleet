@@ -4,8 +4,6 @@ from typing import Any
 from random import randint
 
 
-
-
 class RedisCache:
 
     def __init__(self,redis: Redis,

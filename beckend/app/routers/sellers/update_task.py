@@ -1,5 +1,4 @@
-from app.database.models import Comments,Task,Seller,Proviso
-from app.database.shemas.task_shemas import TaskPost,ProvisoPost
+from app.database.shemas.task_shemas import (TaskPost,ProvisoPost)
 from fastapi import APIRouter,HTTPException,Depends,status
 from app.database.db import AsyncSession,get_db
 from app.auth.auth import current_token
@@ -15,7 +14,7 @@ from redis.asyncio import Redis
 is_sellers = ReschePoints(Role.SELLER)
 
 
-routers = APIRouter(prefix='/uptask',
+routers = APIRouter(prefix='/task',
                    dependencies=[Depends(is_sellers)])
 
 
@@ -36,14 +35,16 @@ PostDb = Annotated[UserRepositories,Depends(connect_db)]
 Cache = Annotated[RedisCache,Depends(connect_redis)]
 
 
-@routers.post('/',status_code=status.HTTP_201_CREATED,
-              dependencies=[Depends(is_sellers)])
-async def post_task(task : TaskPost,proviso: ProvisoPost,
-                    user: CurrenUser, db:PostDb):
 
-    await db.post_task(tasks=task,proviso=proviso,user_id=user[Role.SELLER])
+@routers.post('/',status_code=status.HTTP_201_CREATED)
+async def post_task(task : TaskPost,user: CurrenUser, db:PostDb):
+
+    await db.PostTask(tasks=task,seller_id=user[Role.SELLER])
     
 
 
-
-
+@routers.put('/{task_id}',status_code=status.HTTP_205_RESET_CONTENT)
+async def put_task(task_id: int,task: TaskPost ,user: CurrenUser, db: PostDb):
+    await db.UpdateTask(task_id=task_id,
+                        seller_id=user['seller_id'],
+                        task=task)

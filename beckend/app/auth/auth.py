@@ -73,7 +73,7 @@ def current_token(token: str=Depends(oauth_shemas)):
     if not all((p[SUB],p[ROLE])):
         raise HTTPException(status_code=404,detail='зайдите снова')
 
-    if p[Role.BAYER] or p[Role.SELLER]:
+    if not p[Role.BAYER] and not p[Role.SELLER]:
         raise HTTPException(status_code=404, detail='зайдите снова')
 
     if p[Role.BAYER] and p[Role.SELLER]:

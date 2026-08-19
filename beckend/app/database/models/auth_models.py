@@ -12,7 +12,7 @@ from datetime import datetime
 pk=Annotated[int,mapped_column(primary_key=True)]
 
 class Rolename(str, enum.Enum):
-    buyer = ' buyer'
+    buyer = 'buyer'
     seller = 'seller'
 
 

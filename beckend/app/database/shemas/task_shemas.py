@@ -11,7 +11,7 @@ class ProvisoPost(BaseModel):
 class TaskPost(BaseModel):
 
     name: str
-    
+    proviso: ProvisoPost
     
 
 class ProvisoGet(BaseModel):
@@ -36,8 +36,6 @@ class TaskGet(BaseModel):
 
 class CommentsPost(BaseModel):
 
-    buyer_id : int
-    task_id : int
     comment: str
 
     
