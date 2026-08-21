@@ -1,11 +1,10 @@
 from app.database.db import AsyncSession
-from pydantic import BaseModel
 from sqlalchemy import insert,select,and_,update,delete
 from sqlalchemy.orm import joinedload
 from app.database.shemas.task_shemas import TaskPost,CommentsPost,ProvisoPost,TaskPatch
 from fastapi import status,HTTPException
 from app.exceptions import TaskNotFoundError
-from app.database.models import (Proviso,Task,User_auth as User,Seller,Comments)
+from app.database.models import Proviso,Task,Comments
 
 
 
@@ -89,4 +88,33 @@ class UserRepositories:
         
 
     
+    async def UpdateComments(self,comments_id,task_id: int,user_id,comments: CommentsPost):
 
+        async with self._db.begin():
+            comm=await self._db.execute(
+                update(Comments)
+                .where(and_(
+                    Comments.id==comments_id,
+                    Comments.user_id==user_id,
+                    Comments.task_id==task_id))
+                .values(comments.model_dump())
+                .returning(Comments)
+            )
+            c=comm.scalars().first()
+        return c
+
+
+
+    async def DelComments(self,comments_id: int, task_id: int, user_id: int):
+
+        async with self._db.begin():
+            row=await self._db.execute(
+                delete(Comments)
+                .where(and_(
+                    Comments.id==comments_id,
+                    Comments.user_id==user_id,
+                    Comments.task_id==task_id)))
+            
+            if row.rowcount == 0:
+                raise TaskNotFoundError()
+        return status.HTTP_200_OK

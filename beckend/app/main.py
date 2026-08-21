@@ -11,7 +11,7 @@ from config import settings
 from app.routers import approuter as routers_rout
 from app.exceptions import AllExceptions
 import logging,traceback
-
+from app.redis_client import RateLimite
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
@@ -19,7 +19,8 @@ async def lifespan(app:FastAPI):
         url=settings.REDISE_URL,decode_responses=True
     )
     redis=Redis(connection_pool=pool)
-
+    limite=RateLimite(redis=redis)
+    app.state.limite=limite
     app.state.redis=redis
 
     yield 
@@ -33,6 +34,22 @@ app=FastAPI(lifespan=lifespan)
 app.include_router(router_auth)
 app.include_router(routers_rout)
 
+
+@app.middleware('http')
+async def rate_limite(request: Request,call_next):
+    limite=request.app.state.limite
+    client=request.client.host if request.client else 'uknown'
+    endpoint=request.url.path
+    if endpoint in ['/docs','/openapi.json','/redoc']:
+        return await call_next(request)
+    is_block=await limite.is_limite(
+        endpoint=request.url.path,ip_adress=client,
+        max_request=5,window_second=5)
+    if is_block:
+        return JSONResponse(status_code=404,content='заработал рате лимите')
+
+    return await call_next(request)
+    
 
 logging.basicConfig(level=logging.INFO)
 logger= logging.getLogger("fastapi_exceptions")

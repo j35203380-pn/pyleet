@@ -50,8 +50,8 @@ class Comments(Base):
     __tablename__ = 'comments'
 
     id : Mapped[pk]
-    user_id : Mapped[int] = mapped_column(ForeignKey('users.id'), index=True)
-    task_id : Mapped[int] = mapped_column(ForeignKey('tasks.id'), index=True)
+    user_id : Mapped[int] = mapped_column(ForeignKey('users.id',ondelete='CASACDE'), index=True)
+    task_id : Mapped[int] = mapped_column(ForeignKey('tasks.id',ondelete='CASCADE'), index=True)
     comment : Mapped[str] = mapped_column(Text)
     created_at : Mapped[datetime] = mapped_column(DateTime(timezone=True),
                                                   server_default=func.now())

@@ -47,7 +47,7 @@ class Settings(BaseSettings):
 
     @property
     def REDISE_URL(self):
-        return f'redis://{self.REDIS_USER}:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}'
+        return f'redis://{self.REDIS_HOST}:{self.REDIS_PORT}'
 
 
 settings=Settings()

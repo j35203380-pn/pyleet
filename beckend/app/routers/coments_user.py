@@ -37,3 +37,17 @@ async def add_comment(task_id: int, comments: CommentsPost,
 
 
 
+
+@routers.put('/task/{task_id}')
+async def put_comments(task_id: int, comment_id: int, users: CurrenUser,
+                            db: PostDb,comments: CommentsPost):
+
+    return await db.UpdateComments(commetns_id=comment_id,task_id=task_id,
+                                   user_id=users['id'],comments=comments)   
+
+
+
+@routers.delete('/task/{task_id}')
+async def delete_comments(task_id: int,comment_id: int, users: CurrenUser,db: PostDb):
+
+    return await db.DelComments(task_id=task_id,comments_id=comment_id,user_id=users['id'])

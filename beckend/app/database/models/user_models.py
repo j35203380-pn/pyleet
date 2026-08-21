@@ -18,7 +18,7 @@ class Seller(Base):
 
     id : Mapped[pk]
     inn : Mapped[int]
-    user_id : Mapped[int]=mapped_column(ForeignKey('users.id'),index=True)
+    user_id : Mapped[int]=mapped_column(ForeignKey('users.id',ondelete='CASCADE'),index=True)
     create_date : Mapped[datetime] = mapped_column(DateTime(timezone=True),
                                                 server_default=func.now()) 
     updated_at : Mapped[datetime] = mapped_column(DateTime(timezone=True),
@@ -34,7 +34,7 @@ class Buyer(Base):
     __tablename__ = 'buyers'
 
     id : Mapped[pk]
-    user_id : Mapped[int]=mapped_column(ForeignKey("users.id"), index=True)
+    user_id : Mapped[int]=mapped_column(ForeignKey("users.id",ondelete='CASCADE'), index=True)
     
     user : Mapped['User_auth'] = relationship(back_populates='buyers')
 
