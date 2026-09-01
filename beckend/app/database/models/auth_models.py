@@ -7,24 +7,17 @@ from datetime import datetime
 
 
 
-
-
 pk=Annotated[int,mapped_column(primary_key=True)]
 
-class Rolename(str, enum.Enum):
-    buyer = 'buyer'
-    seller = 'seller'
 
 
-
-class User_auth(Base):
+class User(Base):
     __tablename__ = 'users'
 
     id : Mapped[pk]
     name : Mapped[str]
     nik_name : Mapped[str] = mapped_column(unique=True)
-    role : Mapped[str] = mapped_column(Enum(Rolename),
-                                       default=Rolename.buyer)
+    
     email : Mapped[str] = mapped_column(unique=True)
     password : Mapped[str]
 
@@ -33,7 +26,8 @@ class User_auth(Base):
     updated_at : Mapped[datetime] = mapped_column(DateTime(timezone=True),
                                     server_default=func.now(),
                                     onupdate=func.now())
-    sellers : Mapped['Seller'] = relationship(back_populates='user')
-    buyers : Mapped['Buyer'] = relationship(back_populates='user')
+    
+    submissions : Mapped[list['Submission']] = relationship(back_populates='user')
     comments : Mapped[list['Comments']] = relationship(back_populates='users')
+
 

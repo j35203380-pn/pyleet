@@ -75,7 +75,7 @@ class RedisCache:
         else:
             key=f'lock_key:{self._prefix}:{enum_id}'
         
-        return self._redis.lock(key, timeout=timeout_,sleep=sleep_)
+        return  self._redis.lock(key, timeout=timeout_,sleep=sleep_)
 
 
     async def cache_del(self, enum_id: str|int):

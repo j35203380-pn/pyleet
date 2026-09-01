@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     REDIS_PORT: int
     REDIS_PASSWORD: str
 
+    RBROKER_HOST: str
+    RBROKER_USER: str
+    RBROKER_PORT: int
+    RBROKER_PASSWORD: str
 
     secret_key_path : str = Field(validation_alias='JWT_SECRET_KEY')
     public_key_path : str = Field(validation_alias="JWT_PUBLIC_KEY")
@@ -49,10 +53,18 @@ class Settings(BaseSettings):
     def REDISE_URL(self):
         return f'redis://{self.REDIS_HOST}:{self.REDIS_PORT}'
 
+    @property
+    def RABBIT_BROKER_URL(self):
+        return f"amqp://{self.RBROKER_USER}:{self.RBROKER_PASSWORD}@{self.RBROKER_HOST}:{self.RBROKER_PORT}"
+
 
 settings=Settings()
 
 
-class Role(str,Enum):
-    SELLER='seller'
-    BAYER='buyer'
+class SubmissionStatus(str, Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    ACCEPTED = "accepted"        
+    WRONG_ANSWER = "wrong_answer" 
+    RUNTIME_ERROR = "runtime_error"  
+    TIME_LIMIT_EXCEEDED = "time_limit_exceeded" 

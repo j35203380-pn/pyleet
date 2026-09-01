@@ -1,14 +1,12 @@
-from pydantic import BaseModel,EmailStr,field_validator,model_validator,ConfigDict
-from app.database.models.auth_models import Rolename
+from pydantic import BaseModel,EmailStr,field_validator,model_validator,ConfigDict,Field
 from datetime import datetime
 
 
 class UserPost(BaseModel):
     name : str
     nik_name : str
-    role : Rolename
     email : EmailStr
-    password : str
+    password : str=Field(min_length=8)
     password_confim : str
 
 
@@ -33,26 +31,19 @@ class UserPost(BaseModel):
     
         return self
     
-    @field_validator('role')
-    @classmethod
-    def role_validation(cls,r):
-        allow_roles={Rolename.seller,Rolename.buyer}
-        if r not in allow_roles:
-            raise ValueError("Ведены не существующие данные")
-        return r
+class UserAdd(BaseModel):
+    name : str
+    nik_name : str
+    email : EmailStr
+    password : str
 
-class Seller(UserPost):
-    inn: int
-
-class Bayer(UserPost):
-    pass
 
 class UserLogin(BaseModel):
     email : EmailStr
     password : str
 
 class Token(BaseModel):
-    acces_token : str
+    access_token : str
     token_type: str = 'bearer'
 
 class ToeknPayload(BaseModel):
