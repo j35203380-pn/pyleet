@@ -3,15 +3,14 @@ from app.database.db import get_db,AsyncSession
 from fastapi import APIRouter,Depends,status
 from typing import Annotated
 from fastapi.security import OAuth2PasswordRequestForm
-from app.database.models import User
 from app.auth.auth import oauth_shemas
-from app.routers.repositories import UserRepositories
+from app.auth.repositories import AuthRepositories
 
 async def connect_db(db: Annotated[AsyncSession,Depends(get_db)]):
-    return UserRepositories(db)
+    return AuthRepositories(db)
 
 
-GetDB = Annotated[UserRepositories,Depends(connect_db)]
+GetDB = Annotated[AuthRepositories,Depends(connect_db)]
 
 
 router=APIRouter(prefix='/auth',tags=["Авторизация и Вход"])

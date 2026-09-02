@@ -11,8 +11,20 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql
 
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    hostname: localhost
+    ports:
+      - "5673:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: 'guest'
+      RABBITMQ_DEFAULT_PASS: 'guest'
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
 
 volumes:
   pgdata:
+  rabbitmq-data:
 
 

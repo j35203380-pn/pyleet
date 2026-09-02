@@ -24,3 +24,8 @@ class CommentNotFound(AllExceptions):
 class SubmissionNOtFound(AllExceptions):
     def __init__(self, status_code, detail=None, headers=None):
         super().__init__(status_code=204, detail='Данные не найдены')
+
+class CategoryNotFound(AllExceptions):
+    def __init__(self, status_code, detail=None, headers=None):
+        super().__init__(status_code=204, detail='категории не найдены')
+        

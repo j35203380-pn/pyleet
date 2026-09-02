@@ -1,15 +1,22 @@
 from argon2 import PasswordHasher
-from config import settings,Role
+from config import settings
 import jwt
 from datetime import timedelta,timezone,datetime
 from fastapi  import HTTPException,Depends
 from fastapi.security import OAuth2PasswordBearer
 import uuid
 from argon2.exceptions import VerifyMismatchError
+from app.redis_client import RedisConnect
+from redis.asyncio import Redis
+from typing import Annotated
+
+redis=Annotated[Redis,Depends(RedisConnect)]
+
 
 ph=PasswordHasher()
 
 oauth_shemas=OAuth2PasswordBearer(tokenUrl='auth/login')
+
 
 JTI='jti'
 ROLE='role'
@@ -22,8 +29,6 @@ def PasswordHashed(password: str):
     h=ph.hash(password)
     return h
 
-
-black_list=set()
 
 def PasswordVerifi(hash,password: str):
     try:
@@ -60,21 +65,27 @@ def decode_token(token: str):
 
 
 
-def current_token(token: str=Depends(oauth_shemas)):
-
-    p=decode_token(token)
-    if p[TYPE] != 'access':
-        raise HTTPException(status_code=401,detail='ожидался access ')
+def current_token(r: redis,token: str=Depends(oauth_shemas)):
     
-    if p[JTI] in black_list:
+    payload=decode_token(token)
+    key=f'black_list:{payload[JTI]}'
+    black_list=r.get(key)
+    if black_list:
         raise HTTPException(status_code=400,detail='зайдите снова')
+    
+    if payload[TYPE] != 'access':
+        raise HTTPException(status_code=401,detail='ожидался access ')
     
    
         
-def logout(payload):
-
+def logout(payload, r: redis):
+    key=f'black_list:{payload[JTI]}'
     if payload[TYPE]!='access':
         raise HTTPException(status_code=401,detail='нужен токен access')
     
-    black_list.add(payload[JTI])
+    ttl=int(payload[EXP]> datetime.now(timezone.utc).timestamp())
+    
+    if ttl>0:
+        r.set(key,1,ttl)
+    
     

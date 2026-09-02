@@ -9,6 +9,9 @@ from app.exceptions import AllExceptions
 import logging,traceback
 from app.redis_client import RateLimite
 from app.brokers import broker 
+from app.Admin.models import UserAdminTask,UserAdminCategory,authenfication_backend
+from sqladmin import Admin
+from app.database.db import engine
 
 
 @asynccontextmanager
@@ -64,3 +67,8 @@ async def exceptions_all(req: Request, exc: AllExceptions):
         f"Трейсбек: {error_tr}"
     )
     return JSONResponse(exc.detail,status_code=exc.status_code)
+
+
+admin=Admin(app,engine,authentication_backend=authenfication_backend)
+admin.add_view(UserAdminTask)
+admin.add_view(UserAdminCategory)

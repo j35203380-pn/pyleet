@@ -1,5 +1,6 @@
 from config import SubmissionStatus
 
+
 async def determine_statuse(exit_code: str,test_results):
 
     if exit_code!=0:
@@ -14,3 +15,5 @@ async def determine_statuse(exit_code: str,test_results):
         return SubmissionStatus.ACCEPTED
 
     return SubmissionStatus.WRONG_ANSWER
+
+

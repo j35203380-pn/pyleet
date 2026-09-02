@@ -38,7 +38,7 @@ class TaskDetailGet(BaseModel):
     difficulty: str
     starter_code: str
     method_name: str
-    comments : list[CommetnsGet]=[]
+    comments : int
     
 
     model_config = ConfigDict(from_attributes=True)
@@ -93,3 +93,22 @@ class ExecutionRequest(BaseModel):
     code: str
     method_name: str
     test_cases: list[dict]
+
+class CategoriesItemList(BaseModel):
+    name: str
+    tasks: list[TaskListItemGet]=[]
+
+    model_config=ConfigDict(from_attributes=True)
+
+class CategoryAllGet(BaseModel):
+    id : int
+    name: str
+
+    model_config=ConfigDict(from_attributes=True)
+
+
+class CategoryAllCreate(BaseModel):
+    
+    name: list[CategoryAllGet]
+
+    model_config=ConfigDict(from_attributes=True)

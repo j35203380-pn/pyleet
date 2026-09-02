@@ -60,17 +60,3 @@ class Settings(BaseSettings):
 
 settings=Settings()
 
-
-class SubmissionStatus(str, Enum):
-    PENDING = "pending"
-    RUNNING = "running"
-    ACCEPTED = "accepted"        
-    WRONG_ANSWER = "wrong_answer" 
-    RUNTIME_ERROR = "runtime_error"  
-    TIME_LIMIT_EXCEEDED = "time_limit_exceeded" 
-
-
-class DifficultyLevel(str,Enum):
-    EASY='Easy'
-    MEDIUM='Medium'
-    HARD='Hard'

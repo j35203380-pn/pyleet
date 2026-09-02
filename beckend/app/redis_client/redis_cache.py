@@ -2,7 +2,7 @@ from redis.asyncio import Redis
 from pydantic import BaseModel, TypeAdapter
 from typing import Any
 from random import randint
-
+import json
 
 class RedisCache:
 
@@ -18,7 +18,12 @@ class RedisCache:
 
 
 
-    def cache_key(self, enum_id: str| int):
+    def cache_key(self, enum_id: str| int, suffix: str|None=None):
+        if suffix:
+            if self._key:
+                return f"{self._prefix}:{self._key}:{suffix}:{enum_id}"
+            return f"{self._prefix}:{suffix}:{enum_id}"
+
         if self._key:
             return f"{self._prefix}:{self._key}:{enum_id}"
 
@@ -31,29 +36,38 @@ class RedisCache:
 
 
 
-    async def set_cache(self, enum_id: str|int, pow: BaseModel):
-        key= self.cache_key(enum_id)
+    async def set_cache(self, enum_id: str|int,
+                         pow: BaseModel,suffix: str|None=None):
+        if suffix:
+            key= self.cache_key(enum_id,suffix)
+
+        else:
+            key= self.cache_key(enum_id)
         
         await self._redis.set(key,pow.model_dump_json(), ex=self.ttl_)
 
 
 
-    async def set_cache_list(self, sl: dict):
+    async def set_cache_list(self, enum_id: str|int,
+                         pow: list,model: type[BaseModel],suffix: str|None=None):
+        if suffix:
+            key= self.cache_key(enum_id,suffix)
 
-        async with self._redis.pipeline(transaction=False) as pipe:
+        else:
+            key= self.cache_key(enum_id)
 
-            for enum_id,por in sl.items():
-                key= self.cache_key(enum_id)
-                await pipe.set(key,TypeAdapter(Any).dump_json(por),ex=self.ttl_)
-
-            await pipe.execute()
+        res=[model.model_validate(item).model_dump() for item in pow]
+        
+        await self._redis.set(key,json.dumps(res), ex=self.ttl_)
 
 
 
     async def get_cache(self, enum_id: str|int, 
-                        model: type[BaseModel]|None=None):
-
-        key= self.cache_key(enum_id)
+                        model: type[BaseModel]|None=None,suffix: str|None=None):
+        if suffix:
+            key= self.cache_key(enum_id,suffix)
+        else:
+            key= self.cache_key(enum_id)
         cash = await self._redis.get(key)
         if cash:
             
@@ -66,10 +80,15 @@ class RedisCache:
     
 
 
-    def lock_key(self, enum_id: str|int,
+    def lock_key(self, enum_id: str|int,suffix: str|None=None,
                  timeout_: int=3,sleep_: float=0.5):
-
-        if self._key: 
+        if suffix:
+            if self._key: 
+                key = f'lock_key:{self._prefix}:{self._key}:{suffix}:{enum_id}'
+            else:
+                key = f'lock_key:{self._prefix}:{suffix}:{enum_id}'
+                        
+        elif self._key: 
             key = f'lock_key:{self._prefix}:{self._key}:{enum_id}'
                 
         else:
@@ -78,9 +97,11 @@ class RedisCache:
         return  self._redis.lock(key, timeout=timeout_,sleep=sleep_)
 
 
-    async def cache_del(self, enum_id: str|int):
-
-        key= self.cache_key(enum_id)
+    async def cache_del(self, enum_id: str|int,suffix: str|None=None):
+        if suffix:
+            key= self.cache_key(enum_id,suffix)
+        else:
+            key= self.cache_key(enum_id)
         await self._redis.unlink(key)
 
 

@@ -20,4 +20,6 @@ async def lifespan(contex: ContextRepo):
     await docker.close()
     await redis.aclose()
     await pool.aclose()
+
+    
 app=FastStream(broker,lifespan=lifespan)

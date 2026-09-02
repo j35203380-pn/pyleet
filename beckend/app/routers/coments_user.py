@@ -4,8 +4,8 @@ from app.database.db import AsyncSession,get_db
 from app.auth.auth import current_token
 from app.dependcies import ReschePoints
 from typing import Annotated
-from config import Role
-from app.routers.repositories import UserRepositories 
+
+from app.routers.repositories import CommRepositories 
 
 
 
@@ -17,11 +17,11 @@ routers = APIRouter(prefix='/coments',
 
 
 def connect_db(db : AsyncSession= Depends(get_db)):
-    return UserRepositories(db)
+    return CommRepositories(db)
 
 
 CurrenUser = Annotated[dict,Depends(current_token)]
-PostDb = Annotated[UserRepositories,Depends(connect_db)]
+PostDb = Annotated[CommRepositories,Depends(connect_db)]
 
 
 
@@ -32,7 +32,7 @@ async def get_commetns(task_id: int,user: CurrenUser, db: PostDb):
 
 
 
-@routers.get('/all',response_model=list[CommetnsGet])
+@routers.get('/user/all',response_model=list[CommetnsGet])
 async def get_all_commetns(user: CurrenUser, db: PostDb,
                            limit: int=10,offset: int=0):
     return await db.AllGetComment(user['id'],limit=limit,offset=offset)

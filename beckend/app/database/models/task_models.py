@@ -1,5 +1,5 @@
 from app.database.db import Base
-from sqlalchemy.orm import Mapped,mapped_column
+from sqlalchemy.orm import Mapped,mapped_column,column_property
 from sqlalchemy import ForeignKey,func,Text,Enum
 from typing import Annotated
 from sqlalchemy.dialects.postgresql import JSONB,UUID
@@ -9,8 +9,8 @@ from sqlalchemy.orm import Mapped,mapped_column,relationship
 from sqlalchemy import ForeignKey,Enum,func,DateTime
 from typing import Annotated,Any
 from datetime import datetime
-from sqlalchemy import JSON
-from config import SubmissionStatus
+from sqlalchemy import JSON,select
+from config import SubmissionStatus,DifficultyLevel
 from uuid import uuid4
 
 json_type = JSON().with_variant(JSONB, "postgresql")
@@ -24,7 +24,7 @@ class Task(Base):
     id : Mapped[pk]
     title : Mapped[str]
     description : Mapped[str] = mapped_column(Text)
-    difficulty : Mapped[str]
+    difficulty : Mapped[DifficultyLevel] = mapped_column(Enum(DifficultyLevel))
     solution : Mapped[Any | None] = mapped_column(json_type)
     starter_code: Mapped[str] = mapped_column(Text)     
     method_name: Mapped[str]                            
@@ -35,11 +35,18 @@ class Task(Base):
     update_at : Mapped[datetime] = mapped_column(DateTime(timezone=True),
                                                  server_default=func.now(),
                                                  onupdate=func.now())
+
     
     submissions : Mapped[list['Submission']] = relationship(back_populates='task')
     comments : Mapped[list['Comments']] = relationship(back_populates='task')
+    categories : Mapped[list['Category']] =  relationship(secondary='type_tasks',
+                                                          back_populates='tasks')
 
 
+    def __repr__(self):
+        return self.title
+
+ 
 
 class Comments(Base):
     __tablename__ = 'comments'
@@ -57,6 +64,7 @@ class Comments(Base):
                                                  
     users : Mapped['User'] = relationship(back_populates='comments')
     task : Mapped['Task'] = relationship(back_populates='comments')
+    
 
 
 class Submission(Base):
@@ -78,3 +86,37 @@ class Submission(Base):
     user : Mapped['User'] = relationship(back_populates='submissions')
     task : Mapped['Task'] = relationship(back_populates='submissions')
 
+
+class TypeTask(Base):
+    __tablename__ = 'type_tasks'
+
+
+    categories_id : Mapped[int] = mapped_column(
+                                    ForeignKey('categories.id',
+                                                ondelete='CASCADE')
+                                                ,primary_key=True)
+    task_id : Mapped[int] = mapped_column(
+                                    ForeignKey('tasks.id',
+                                                ondelete='CASCADE'),
+                                                primary_key=True)
+
+
+class Category(Base):
+    __tablename__ = 'categories'
+
+    id : Mapped[pk]
+
+    name: Mapped[str]
+
+    tasks: Mapped[list['Task']]= relationship(secondary='type_tasks',
+                                              back_populates='categories')
+
+    def __rerp__(self):
+        return self.name
+
+
+Task.comments_count=column_property(
+    select(func.count(Comments.id))
+    .where(Comments.task_id==Task.id)
+    .correlate_except(Comments)
+    .scalar_subquery())
