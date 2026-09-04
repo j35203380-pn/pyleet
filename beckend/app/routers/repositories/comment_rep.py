@@ -88,10 +88,12 @@ class CommRepositories:
                     Comments.task_id==task_id,Comments.user_id==user_id
                 ))
             )
-            if not comm:
+            print(comm)
+            comment=comm.scalars().all()
+            
+            if not comment:
                 raise CommentNotFound()
 
-            comment=comm.scalar_one_or_none()
         return comment
     
 
@@ -109,10 +111,11 @@ class CommRepositories:
                 .order_by(Comments.created_at.desc())
                 .limit(limit).offset(offset)
             )
-            if not comm:
+            comments=comm.scalars().all()
+            
+            if not comments:
                 raise CommentNotFound()
 
-            comments=comm.scalars().all()
 
         return comments
 

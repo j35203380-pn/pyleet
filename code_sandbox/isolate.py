@@ -5,11 +5,19 @@ from typing import Annotated
 from redis.asyncio import Redis
 from faststream.rabbit.schemas import Channel
 import time
-import  aiodocker
+import logging
+import aiodocker
 import asyncio
-from code_sandbox.shemas import ExecutionResult,ConfDcoker,ExecutionRequest
-from code_sandbox.harness import build_script
+from shemas import ExecutionResult,ConfDcoker,ExecutionRequest
+from harness import build_script
 import json
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s - %(message)s",
+)
+
+logger = logging.getLogger(__name__)
 
 
 LimitSem=asyncio.Semaphore(15)
@@ -20,47 +28,59 @@ exchange=RabbitExchange('submission')
 
 redis=Annotated[Redis,Context('redis')]
 
-docker=aiodocker.Docker()
+DOCKER=Annotated[aiodocker.Docker,Context('docker')]
 
 
 @broker.subscriber(queue=queue,exchange=exchange,channel=Channel(prefetch_count=30),ack_policy=AckPolicy.MANUAL)
-async def run_code(msg: RabbitMessage,r: redis):
-    
+async def run_code(msg: RabbitMessage,r: redis,docker: DOCKER):
+
+    print('начался брокер перехват сообщения')
+    logging.info('запрос принят брокеров')
     body=ExecutionRequest.model_validate_json(msg.body)
     correlation_id=str(msg.correlation_id)
-    result= await isolate(body.code,body.method_name,body.test_cases,timeout=3)
-    
+    print(correlation_id)
+    result= await isolate_run(code=body.code,method=body.method_name,
+                              test_code=body.test_cases,timeout=3,
+                              docker=docker)
+    logging.info('взять результаты контенйера')
     exc=ExecutionResult(**result)
-    if body.mode == 'submit':
-        key=f'result:submission{correlation_id}'
-        await r.set(key,exc.model_dump_json(),ex=90)
+
+    key=f'result:submission{correlation_id}'
+    await r.set(key,exc.model_dump_json(),ex=90)
     await r.publish(correlation_id,exc.model_dump_json())
+    logging.info('ответ отправлен')
     await msg.ack()
 
 
 
 
-async def isolate(code :str, timeout: int,method : str,test_code: str):
+async def isolate_run(code :str, timeout: int,method : str,test_code: list[dict],docker: aiodocker.Docker):
     start=time.monotonic()
+    logging.info('начинается контейне')
     container=await docker.containers.create(config=ConfDcoker)
 
     try:
         async with LimitSem:
-            stream=await container.attach(stdin=True)
+            stream= container.attach(stdin=True)
             await container.start()
+            logging.info('отправляем данные в скрипт builder_script')
             code_user=await build_script(user_code=code,method_name=method,test_cases=test_code)
-            await stream.write_in(code_user)
+            
+            await stream.write_in(code_user.encode())
             await stream.close()
-
+            logging.info('скрипт вернул успешно результаты')
             try:
-
-                await asyncio.wait_for(container.wait(timeout=timeout),timeout=timeout)
-
+                logging.info('ждем контейнера')
+                    
+                await asyncio.wait_for(container.wait(),timeout=timeout)
+                logging.info('контейнер успешно обработал')
             except TimeoutError:
                 await container.kill()
 
             log=await container.log(stdout=True,stderr=True)
+            
             info=await container.show()
+            print("CONTAINER STATE:", info["State"])
             exit_code=info['State']['ExitCode']
 
     finally:
@@ -78,17 +98,20 @@ async def isolate(code :str, timeout: int,method : str,test_code: str):
 
     output=''.join(log)
     test_result=None
-    if '###RESULT###' in output:
-        json_part = output.split('###RESULT###')[-1].strip()
-        try:
-            test_result=json.loads(json_part)
-        except json.JSONDecodeError:
-            pass
-
-    return dict(logs=log,
+    lines= output.splitlines()
+    try:
+        result_index=lines.index("###RESULT###")
+        json_part = lines[result_index+1].strip()
+        test_result=json.loads(json_part)
+    
+    except (ValueError, IndexError, json.JSONDecodeError):
+        logging.exception("Не удалось распарсить test_result")
+    logging.info('контейнер закончил')
+    s=dict(logs=log,
                  output=output,
                    exit_code=exit_code,
-                     test_results=test_result,
+                     test_result=test_result,
                        time_ms=round(tm, 2))
-
+    
+    return s
     

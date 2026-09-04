@@ -9,6 +9,7 @@ from argon2.exceptions import VerifyMismatchError
 from app.redis_client import RedisConnect
 from redis.asyncio import Redis
 from typing import Annotated
+import logging
 
 redis=Annotated[Redis,Depends(RedisConnect)]
 
@@ -65,27 +66,37 @@ def decode_token(token: str):
 
 
 
-def current_token(r: redis,token: str=Depends(oauth_shemas)):
-    
+async def current_token(r: redis,token: str=Depends(oauth_shemas)):
+    logging.info('проверка токена')
     payload=decode_token(token)
+    logging.info('токен декодирован успешно')
     key=f'black_list:{payload[JTI]}'
-    black_list=r.get(key)
+
+    black_list=await r.get(key)
+    print(black_list)
     if black_list:
+        logging.info('токен невалидный')
         raise HTTPException(status_code=400,detail='зайдите снова')
     
     if payload[TYPE] != 'access':
+        logging.info('тип токена неправильный ')
         raise HTTPException(status_code=401,detail='ожидался access ')
+    logging.info('токен успешно прошел ')
+    return {'id': int(payload[SUB]),'type': payload[TYPE]}
     
    
         
-def logout(payload, r: redis):
+async def logout(payload, r: redis):
+    logging.info('выходбвызван logout')
     key=f'black_list:{payload[JTI]}'
     if payload[TYPE]!='access':
         raise HTTPException(status_code=401,detail='нужен токен access')
-    
-    ttl=int(payload[EXP]> datetime.now(timezone.utc).timestamp())
+
+    current_time=datetime.now(timezone.utc).timestamp()
+    ttl=int(payload[EXP]-current_time)
     
     if ttl>0:
-        r.set(key,1,ttl)
+        logging.info('токен удален')
+        await r.set(key,1,ttl)
     
     

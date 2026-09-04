@@ -4,14 +4,6 @@ from config import SubmissionStatus
 from uuid import UUID
 
 
-class TaskCreate(BaseModel):
-    title: str
-    description: str
-    difficulty: str
-    solution: str
-
-
-
 
 class CommentsCreate(BaseModel):
 
@@ -38,11 +30,19 @@ class TaskDetailGet(BaseModel):
     difficulty: str
     starter_code: str
     method_name: str
-    comments : int
+    comments_count : int
+    
     
 
     model_config = ConfigDict(from_attributes=True)
 
+
+
+class TaskDetailGetAll(TaskDetailGet):
+    solution: str
+    test_cases: list[dict]
+
+    model_config=ConfigDict(from_attributes=True)
 
 class TaskListItemGet(BaseModel):
     id: int
@@ -57,7 +57,7 @@ class SubmissionCreate(BaseModel):
 
 
 class SubmissionAccepted(BaseModel):
-    id: int
+    id: UUID
     status: SubmissionStatus
     created_at: datetime
 
@@ -65,7 +65,7 @@ class SubmissionAccepted(BaseModel):
 
 
 class SubmissionListItemGet(BaseModel):
-    id: int
+    id: UUID
     status: SubmissionStatus
     time_ms: float | None
     created_at: datetime
@@ -75,7 +75,7 @@ class SubmissionListItemGet(BaseModel):
 
 class SubmissionUpdateADD(BaseModel):
     status: SubmissionStatus
-    exit_code: str
+    exit_code: int
     output: str
     time_ms: float
 
@@ -84,7 +84,7 @@ class ExecutionResult(BaseModel):
     logs: list[str]
     output: str
     exit_code: int
-    test_result: list[dict]|None
+    test_result: list[dict]|None=None
     time_ms: float
 
 

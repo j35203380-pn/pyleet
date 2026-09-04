@@ -4,11 +4,13 @@ from config import settings
 from contextlib import asynccontextmanager
 from redis.asyncio import Redis,ConnectionPool
 import asyncio
-from code_sandbox.isolate import broker,docker
-
+from isolate import broker
+import aiodocker
 
 @asynccontextmanager
 async def lifespan(contex: ContextRepo):
+    docker=aiodocker.Docker()
+    contex.set_global('docker',docker)
     await broker.start()
     pool=ConnectionPool.from_url(
             url=settings.REDISE_URL,decode_responses=True)

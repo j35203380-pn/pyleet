@@ -4,6 +4,7 @@ class ExecutionResult(BaseModel):
     logs: list[str]
     output: str
     exit_code: int
+    test_result: list[dict]|None=None
     time_ms: float
 
 
@@ -12,11 +13,15 @@ class ExecutionRequest(BaseModel):
     code: str
     method_name: str
     test_cases: list[dict]
+    
+
 
 
 ConfDcoker={
             "Image": "python:3.11-slim",
             "Cmd": ["python", "-"],
+            "OpenStdin": True,
+            "StdinOnce": True,
             "HostConfig": {
                 "Memory": 128 * 1024 * 1024,
                 "NanoCpus": 500_000_000,

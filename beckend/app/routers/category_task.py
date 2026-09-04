@@ -8,6 +8,8 @@ from app.redis_client import RedisConnect,RedisCache
 from redis.asyncio import Redis
 from app.database.shemas.task_shemas import CategoriesItemList, CategoryAllGet,CategoryAllCreate
 import  asyncio
+import logging
+
 
 routers = APIRouter(prefix='/category',
                     tags=["Категория"])
@@ -36,11 +38,14 @@ Cache = Annotated[RedisCache,Depends(connect_redis)]
 
 
 
-@routers.get('/category',response_model=list[CategoryAllGet])
+@routers.get('/all',response_model=list[CategoryAllGet])
 async def category_get(db: GetDb,r: Cache,background_task: BackgroundTasks):
+    logging.info('запрос category/all')
     key='all'
     result=await r.get_cache(enum_id=key)
-    if result : return result,'cache'
+    if result :
+        logging.info('чтение из кеша')
+        return result
 
     lock=r.lock_key(enum_id=key)
     async with lock:
@@ -50,22 +55,22 @@ async def category_get(db: GetDb,r: Cache,background_task: BackgroundTasks):
         result= await db.CategoriesAll()
         await r.set_cache_list(enum_id=key,pow=result,
                                                  model=CategoryAllGet)
-           
+    logging.info('чтение из бд')
     return result
 
 
-async def category_cache(key: str,pow: CategoryAllCreate,r: Cache):
-    res=[CategoryAllGet.model_validate(item) for item in pow]
-    await r.set_cache(enum_id=key,pow=res)
 
 
 
 
 @routers.get('/task/{cat_id}',response_model=CategoriesItemList)
 async def get_task(cat_id: int, db: GetDb, r: Cache):
+    logging.info('запрос category/task/{cat_id}')
     TASK='task'
     result=await r.get_cache(suffix=TASK, enum_id=cat_id)
-    if result: return result
+    if result: 
+        logging.info('чтение из кеша')
+        return result
     lock=r.lock_key(suffix=TASK,enum_id=cat_id)
     async with lock:
         result=await r.get_cache(enum_id=cat_id)
@@ -74,6 +79,6 @@ async def get_task(cat_id: int, db: GetDb, r: Cache):
         result=await db.CategoriesGet(cat_id=cat_id)
         res=CategoriesItemList.model_validate(result)
         await r.set_cache(suffix=TASK,enum_id=cat_id,pow=res)
-
+    logging.info('чтение из бд')
     return result 
 

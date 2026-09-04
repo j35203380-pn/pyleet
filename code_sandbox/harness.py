@@ -1,4 +1,6 @@
-def build_script(user_code: str, method_name: str, test_cases: list[dict]) -> str:
+async def build_script(user_code: str, 
+                       method_name: str, 
+                       test_cases: list[dict]) -> str:
     return f"""
 from typing import List, Optional, Dict, Tuple
 import json
@@ -10,7 +12,7 @@ class CodeRunner:
         results = []
         for case in test_cases:
             try:
-                actual = func(*case["input"])
+                actual = func(**case["input"])
                 results.append({{"passed": actual == case["expected"], "actual": actual}})
             except Exception as e:
                 results.append({{"passed": False, "error": repr(e)}})

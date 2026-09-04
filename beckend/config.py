@@ -71,6 +71,6 @@ class SubmissionStatus(str, Enum):
 
 
 class DifficultyLevel(str,Enum):
-    EASY='Easy'
-    MEDIUM='Medium'
-    HARD='Hard'
+    EASY='EASY'
+    MEDIUM='MEDIUM'
+    HARD='HARD'

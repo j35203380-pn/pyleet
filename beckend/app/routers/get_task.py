@@ -33,7 +33,7 @@ Cache = Annotated[RedisCache,Depends(connect_redis)]
 
 
 
-@routers.get('/task/solution/{task_id}',response_model=TaskDetailGet)
+@routers.get('/solution/{task_id}',response_model=TaskDetailGet)
 async def solution_task(task_id: int, db: GetDb,r: Cache):
     
     logging.info(f'запрос task/solution/task_id-get_task')
@@ -45,8 +45,9 @@ async def solution_task(task_id: int, db: GetDb,r: Cache):
             task=await r.get_cache(enum_id=task_id,model=TaskDetailGet)
             if not task:
                 task=await db.GetTask(task_id=task_id)
-                await r.set_cache(task_id,task)
-    logging.info('task/solution/task_id-get_task запрос прошле бд ')
+                tsk=TaskDetailGet.model_validate(task)
+                await r.set_cache(task_id,tsk)
+    logging.info('task/solution/task_id-get_task успешно ')
     return task
 
 
@@ -55,15 +56,17 @@ async def solution_task(task_id: int, db: GetDb,r: Cache):
 @routers.get('/task/{level}',response_model=list[TaskListItemGet])
 async def get_task(level: DifficultyLevel , db: GetDb, r: Cache):
     logging.info(f'отпарвлен запрос task/level-get_task')
-    result=await r.get_cache(enum_id=level,model=TaskListItemGet)
-    if result: return result
+    result=await r.get_cache(enum_id=level)
+    if result:
+        logging.info('ответ из кеша') 
+        return result 
     lock=r.lock_key(enum_id=level)
     async with lock:
-        result=await r.get_cache(enum_id=level,model=TaskListItemGet)
+        result=await r.get_cache(enum_id=level)
         if result: return result
         result = await db.LevelTask(level=level)
         await r.set_cache_list(enum_id=level,pow=result,model=TaskListItemGet)
-
+    logging.info('ответ из бд')
     return result
 
 

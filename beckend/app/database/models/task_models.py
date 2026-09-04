@@ -106,7 +106,7 @@ class Category(Base):
 
     id : Mapped[pk]
 
-    name: Mapped[str]
+    name: Mapped[str] = mapped_column(unique=True)
 
     tasks: Mapped[list['Task']]= relationship(secondary='type_tasks',
                                               back_populates='categories')

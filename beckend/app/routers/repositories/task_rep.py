@@ -5,7 +5,7 @@ from app.exceptions import TaskNotFoundError
 from app.database.models import Task,Category,Comments
 import asyncio
 from config import DifficultyLevel
-
+import logging
 
 LimitDB=asyncio.Semaphore(20)
 
@@ -19,12 +19,13 @@ class TaskRepositories:
 
 
     async def GetTask(self,task_id: int):
-
+        logging.info("в процессе GetTask")
         async with LimitDB:
             task=await self._db.get(Task,task_id)
 
         if not task:
             raise TaskNotFoundError()
+        logging.info("GetTask успешно выполнен")
 
         return task
 
@@ -39,7 +40,7 @@ class TaskRepositories:
                 select(Task.id,Task.title,Task.difficulty)
                 .where(Task.difficulty == level)
             )
-            t=task.scalar_one_or_none()
+            t=task.all()
             if not t:
                 raise TaskNotFoundError()
 

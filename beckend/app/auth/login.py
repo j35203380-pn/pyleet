@@ -19,8 +19,8 @@ router=APIRouter(prefix='/auth',tags=["Авторизация и Вход"])
 @router.post('/')
 async def registration(user: UserPost,db: GetDB):
    
-    await db.UserAdd(users=user)
-    return status.HTTP_201_CREATED
+    st=await db.UserAdd(users=user)
+    return st
 
 
 

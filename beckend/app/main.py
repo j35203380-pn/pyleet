@@ -11,11 +11,16 @@ from app.redis_client import RateLimite
 from app.brokers import broker 
 from app.Admin.models import UserAdminTask,UserAdminCategory,authenfication_backend
 from sqladmin import Admin
-from app.database.db import engine
-
+from app.database.db import engine,Base
+import asyncio
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
+    #во время тестирования подключить sqlite 
+    #async with engine.begin() as conn:
+        #await conn.run_sync(Base.metadata.create_all)
+    
+    
     await broker.start()
     pool=ConnectionPool.from_url(
         url=settings.REDISE_URL,decode_responses=True
