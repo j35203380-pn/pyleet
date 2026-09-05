@@ -12,6 +12,8 @@ from shemas import ExecutionResult,ConfDcoker,ExecutionRequest
 from harness import build_script
 import json
 
+
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s - %(message)s",
@@ -23,34 +25,44 @@ logger = logging.getLogger(__name__)
 LimitSem=asyncio.Semaphore(15)
 
 broker=RabbitBroker(settings.RABBIT_BROKER_URL)
-queue=RabbitQueue('solution.execute')
-exchange=RabbitExchange('submission')
-
+QUEUE_EXEC=RabbitQueue('solution.execute')
+EXCHANGE=RabbitExchange('submission')
+QUEUE_RES=RabbitQueue('solution.result')
 redis=Annotated[Redis,Context('redis')]
 
 DOCKER=Annotated[aiodocker.Docker,Context('docker')]
 
 
-@broker.subscriber(queue=queue,exchange=exchange,channel=Channel(prefetch_count=30),ack_policy=AckPolicy.MANUAL)
+@broker.subscriber(queue=QUEUE_EXEC,exchange=EXCHANGE,channel=Channel(prefetch_count=30),ack_policy=AckPolicy.NACK_ON_ERROR)
 async def run_code(msg: RabbitMessage,r: redis,docker: DOCKER):
 
     print('начался брокер перехват сообщения')
     logging.info('запрос принят брокеров')
     body=ExecutionRequest.model_validate_json(msg.body)
     correlation_id=str(msg.correlation_id)
-    print(correlation_id)
-    result= await isolate_run(code=body.code,method=body.method_name,
-                              test_code=body.test_cases,timeout=3,
-                              docker=docker)
+    
+    
+    result= await isolate_run(
+        code=body.code,method=body.method_name,
+        test_code=body.test_cases,timeout=3,docker=docker)
+    
+    if not result:
+        raise RuntimeError(f"не смог выполнить submission {correlation_id} — инфраструктурный сбой")
     logging.info('взять результаты контенйера')
-    exc=ExecutionResult(**result)
-
-    key=f'result:submission{correlation_id}'
-    await r.set(key,exc.model_dump_json(),ex=90)
-    await r.publish(correlation_id,exc.model_dump_json())
+    ressub=ExecutionResult(**result).model_dump_json()
+    if body.mode == 'submit':
+        await broker.publish(message=ressub,queue=QUEUE_RES,exchange=EXCHANGE,correlation_id=correlation_id)
+    key=f'result:submission:{correlation_id}'
+    try:
+        await r.set(key, ressub, ex=90)
+        await r.publish(correlation_id, ressub)
+    except Exception as ex:
+        logging.warning(f"Redis notification failed for {correlation_id}: {ex}")
+    
+    
     logging.info('ответ отправлен')
-    await msg.ack()
-
+    
+    
 
 
 

@@ -11,7 +11,7 @@ from app.database.shemas.task_shemas import (ExecutionResult,SubmissionCreate,
                                              SubmissionAccepted,SubmissionListItemGet,
                                              ExecutionRequest,TaskDetailGet,TaskDetailGetAll)
 from uuid import UUID,uuid4
-from app.routers.service import determine_statuse
+from app.routers.service import determine_statuse,message_service
 import asyncio
 import logging
 
@@ -58,10 +58,10 @@ exchange=RabbitExchange('submission')
 async def submit_task(task_id: int,submission: SubmissionCreate
                       ,TaskDb: TASKDB,user: CurretUser,r: RedCache):
     
-    "обязательно напишите  класс ,иначе не сработает"
-    "пример:"
-    "class Solution:"
-    "   def func():"
+    """обязательно напишите  класс ,иначе не сработает
+    пример:
+    class Solution:
+       def func():"""
     
     
     submission_id=str(uuid4())
@@ -73,19 +73,15 @@ async def submit_task(task_id: int,submission: SubmissionCreate
         async with lock:
                 task=await r.get_cache(task_id,TaskDetailGetAll)
                 if not task:
-                    task=await TaskDb.GetTask(task_id=task_id)
+                    pow=await TaskDb.GetTask(task_id=task_id)
                     logging.info('кеширование ответа')
-                    ctask=TaskDetailGetAll.model_validate(task)
-                    await r.set_cache(task_id,ctask)
+                    task=TaskDetailGetAll.model_validate(pow)
+                    await r.set_cache(task_id,task)
                     logging.info('успешно прошел кешированеи')
 
     logging.info("message=ExecuitonResult начинает обрабатывать ")
-    message=ExecutionRequest(
-                mode='run',
-                code=submission.code,
-                method_name=task.method_name,
-                test_cases=task.test_cases
-                )
+    message=message_service(task=task,mode="run",submission=submission)
+    
     logging.info("message=ExecuitonResult успешно обрабобтал ")
     logging.info('публикация решение клиента')
     await broker.publish(
@@ -99,7 +95,7 @@ async def submit_task(task_id: int,submission: SubmissionCreate
 
 
 
-@router.get('/run/result/{submission_id}')
+@router.get('/result/{submission_id}')
 async def result_submit(submission_id: str,queue:PubSub,r: redis):
     logging.info('ожидаем ответ от брокера ')
     key=f'result:submission{submission_id}'
@@ -111,7 +107,7 @@ async def result_submit(submission_id: str,queue:PubSub,r: redis):
                 print(message)
                 if message['type'] == 'message':
                     sub=ExecutionResult.model_validate_json(message['data'])
-                    statuse=await determine_statuse(sub.exit_code,sub.test_result)
+                    statuse=determine_statuse(sub.exit_code,sub.test_result)
                     return {**sub.model_dump(),'status': statuse}
                     
     except TimeoutError:
@@ -134,69 +130,28 @@ async def submit_task(task_id: int,submission: SubmissionCreate
     class Solution:
        def func():"""
     
-    logging.info('code принято')
+    
     task=await r.get_cache(task_id,TaskDetailGetAll)
     if not task:
-        logging.info('в кеше нет данных,идем в бд ')
+       
         lock=r.lock_key(task_id)
         async with lock:
                 task=await r.get_cache(task_id,TaskDetailGetAll)
                 if not task:
-                    task=await TaskDb.GetTask(task_id=task_id)
-                    tsk=TaskDetailGet.model_validate(task)
-                    logging.info('запись в кеш')
+                    tsk=await TaskDb.GetTask(task_id=task_id)
+                    task=TaskDetailGetAll.model_validate(task)
+                   
                     await r.set_cache(task_id,tsk)
-                    logging.info('успешно кеширован')
-    logging.info('записываем данные в Submission db')
-    submission_id=await SubDb.SubmissionPost(task_id=task_id,user_id=user['id'],submission=submission)   
-    logging.info('запись Submission db успешно прошло')
-    logging.info('подготовим message для брокера')
-    message=ExecutionRequest(
-        mode='submit',
-        code=submission.code,
-        method_name=task.method_name,
-        test_cases=task.test_cases
-    )
-    logging.info('message готов,отдаем брокеру')
-    await broker.publish(
-        message.model_dump_json(),queue=queue,
-        exchange=exchange,
-        correlation_id=submission_id.id
-    )
-    logging.info('брокер успешно отправил данные')
-    return dict(id=submission_id.id,
-                status=submission_id.status,
-                created_at=submission_id.creadet_at)
 
-
-
-@router.get('/submit/result/{submission_id}')
-async def result_submit(submission_id: str,SubDb: SUBDB,user: CurretUser,r: redis,queue: PubSub):
-    await queue.subscribe(submission_id)
-    key=f'result:submission{submission_id}'
+    message=message_service(task=task,mode="submit",submission=submission)
+    submission_id=await SubDb.SubmissionPost(task_id=task_id,user_id=user['id'],submission=submission,message=message)   
+   
     
-    try:
-        async with asyncio.timeout(10):
-            async for message in queue.listen():
-                if message['type']=='message':
-                    sub=ExecutionResult.model_validate_json(message['data'])
-                    statuse=await determine_statuse(sub.exit_code,sub.test_result)
-                    await SubDb.SubmissionUpdate(submission_id=UUID(submission_id),user_id=user['id'],tasks=sub,statuse=statuse)
-                    return  {**sub.model_dump(),'status': statuse}
-                    
-                
+    
+    return dict(
+        id=submission_id.id,
+        status=submission_id.status,
+        created_at=submission_id.creadet_at)
 
-    except TimeoutError:
-        result= await r.get(key)
-        if not result:
-            return {'status': 'timeout'}
-        
-        sub=ExecutionResult.model_validate_json(result)
-        statuse=await determine_statuse(sub.exit_code,sub.test_result)
-        await SubDb.SubmissionUpdate(submission_id=UUID(submission_id),user_id=user['id'],tasks=sub,statuse=statuse)
-        return {**sub.model_dump(),'status': statuse}
-        
 
-    finally:
-        await queue.unsubscribe(str(submission_id))
-        await queue.aclose()
+

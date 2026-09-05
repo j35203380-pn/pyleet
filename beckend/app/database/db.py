@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker,AsyncSession,create_async_
 DATABASE_URL=settings.DATABASE_URL
 
 #во время тестирование подлючите sqlite
-#DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
 engine=create_async_engine(DATABASE_URL)
 
