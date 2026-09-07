@@ -8,20 +8,23 @@ from app.routers import approuter as routers_rout
 from app.exceptions import AllExceptions
 import logging,traceback
 from app.redis_client import RateLimite
-from app.brokers import broker 
+from app.brokers.connection import broker 
 from app.Admin.models import UserAdminTask,UserAdminCategory,authenfication_backend
 from sqladmin import Admin
 from app.database.db import engine,Base
+from app.workers.outbox_relay import outbox_res
+
 import asyncio
 
+print(broker)
+print(broker.routers)
+print(broker.subscribers)
 @asynccontextmanager
 async def lifespan(app:FastAPI):
-    #во время тестирования подключить sqlite 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    
-    
+       
     await broker.start()
+    outbox_task=asyncio.create_task(outbox_res())
+    
     pool=ConnectionPool.from_url(
         url=settings.REDISE_URL,decode_responses=True
     )
@@ -32,6 +35,12 @@ async def lifespan(app:FastAPI):
     app.state.redis=redis
 
     yield 
+    outbox_task.cancel()
+    try:
+        await outbox_task
+    except asyncio.CancelledError:
+        pass
+
     await broker.stop()
     await redis.aclose()
     await pool.aclose()
@@ -41,6 +50,9 @@ app=FastAPI(lifespan=lifespan)
 
 app.include_router(router_auth)
 app.include_router(routers_rout)
+
+
+
 
 
 @app.middleware('http')
@@ -54,7 +66,7 @@ async def rate_limite(request: Request,call_next):
         endpoint=request.url.path,ip_adress=client,
         max_request=5,window_second=5)
     if is_block:
-        return JSONResponse(status_code=404,content='заработал рате лимите')
+        return JSONResponse(status_code=429,content='заработал рате лимите')
 
     return await call_next(request)
     

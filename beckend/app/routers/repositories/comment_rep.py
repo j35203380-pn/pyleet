@@ -1,9 +1,10 @@
 from app.database.db import AsyncSession
 from sqlalchemy import insert,select,and_,update,delete
+from sqlalchemy.orm import joinedload
 from app.database.shemas.task_shemas import CommentsCreate
 from fastapi import status
 from app.exceptions import TaskNotFoundError,CommentNotFound
-from app.database.models import Comments
+from app.database.models import Comments,User
 import asyncio
 
 
@@ -84,11 +85,15 @@ class CommRepositories:
 
             comm=await self._db.execute(
                 select(Comments)
-                .where(and_(
-                    Comments.task_id==task_id,Comments.user_id==user_id
+                .options(joinedload(Comments.users)
+                         .load_only(User.id,User.name))
+                .where(
+                    and_(
+                    Comments.task_id==task_id,
+                    Comments.user_id==user_id
                 ))
             )
-            print(comm)
+           
             comment=comm.scalars().all()
             
             if not comment:
@@ -107,6 +112,8 @@ class CommRepositories:
 
             comm= await self._db.execute(
                 select(Comments)
+                .options(joinedload(Comments.users)
+                         .load_only(User.id,User.name))
                 .where(Comments.user_id==user_id)
                 .order_by(Comments.created_at.desc())
                 .limit(limit).offset(offset)
@@ -128,14 +135,17 @@ class CommRepositories:
         async with LimitDB:
             comm= await self._db.execute(
                 select(Comments)
+                .options(joinedload(Comments.users)
+                         .load_only(User.id,User.name))
                 .where(Comments.task_id==task_id)
                 .order_by(Comments.created_at.desc())
                 .limit(limit).offset(offset)
             )
-            if not comm:
+            
+            comments=comm.scalars().all()
+            if not comments:
                 raise CommentNotFound()
 
-            comments=comm.scalars().all()
 
         return comments
 

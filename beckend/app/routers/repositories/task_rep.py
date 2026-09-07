@@ -20,13 +20,15 @@ class TaskRepositories:
 
     async def GetTask(self,task_id: int):
         logging.info("в процессе GetTask")
+
         async with LimitDB:
-            task=await self._db.get(Task,task_id)
+            async with self._db.begin():
 
-        if not task:
-            raise TaskNotFoundError()
+                task=await self._db.get(Task,task_id)
+
+                if not task:
+                    raise TaskNotFoundError()
         logging.info("GetTask успешно выполнен")
-
         return task
 
 

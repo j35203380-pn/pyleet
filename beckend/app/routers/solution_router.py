@@ -65,7 +65,6 @@ async def submit_task(task_id: int,submission: SubmissionCreate
     
     
     submission_id=str(uuid4())
-    await r.cache_del(task_id)
     task=await r.get_cache(task_id,TaskDetailGetAll)
     if not task:
         logging.info('кеш пустой ,запрос в бд ')
@@ -95,10 +94,55 @@ async def submit_task(task_id: int,submission: SubmissionCreate
 
 
 
+
+@router.post('/submit/{task_id}',response_model=SubmissionAccepted)
+async def submit_task(task_id: int,submission: SubmissionCreate
+                              ,TaskDb: TASKDB,SubDb: SUBDB,user: CurretUser,r: RedCache):
+    
+    """обязательно напишите  класс ,иначе не сработает
+    пример:
+    class Solution:
+       def func():"""
+    
+    
+    task=await r.get_cache(task_id,TaskDetailGetAll)
+    
+    if not task:
+       
+        lock=r.lock_key(task_id)
+        async with lock:
+                task=await r.get_cache(task_id,TaskDetailGetAll)
+                if not task:
+                    print('чтение из бд')
+                    pow=await TaskDb.GetTask(task_id=task_id)
+                    task=TaskDetailGetAll.model_validate(pow)
+                   
+                    await r.set_cache(task_id,task)
+
+    message=message_service(task=task,mode="submit",submission=submission)
+    print(message)
+    
+    submission_id=await SubDb.SubmissionPost(task_id=task_id,user_id=user['id'],
+                                             submission=submission,message=message)   
+   
+    
+    
+    return dict(
+        id=submission_id.id,
+        status=submission_id.status,
+        created_at=submission_id.creadet_at)
+
+
+
+
+
+
 @router.get('/result/{submission_id}')
 async def result_submit(submission_id: str,queue:PubSub,r: redis):
     logging.info('ожидаем ответ от брокера ')
-    key=f'result:submission{submission_id}'
+    key=f'result:submission:{submission_id}'
+    res=await r.get(key)
+    if res: return ExecutionResult.model_validate_json(res)
     await queue.subscribe(submission_id)
     try:
         logging.info('слушаем эфир редис')
@@ -118,40 +162,3 @@ async def result_submit(submission_id: str,queue:PubSub,r: redis):
         await queue.unsubscribe(submission_id)
         await queue.aclose()
     
-
-
-
-@router.post('/submit/{task_id}',response_model=SubmissionAccepted)
-async def submit_task(task_id: int,submission: SubmissionCreate
-                              ,TaskDb: TASKDB,SubDb: SUBDB,user: CurretUser,r: RedCache):
-    
-    """обязательно напишите  класс ,иначе не сработает
-    пример:
-    class Solution:
-       def func():"""
-    
-    
-    task=await r.get_cache(task_id,TaskDetailGetAll)
-    if not task:
-       
-        lock=r.lock_key(task_id)
-        async with lock:
-                task=await r.get_cache(task_id,TaskDetailGetAll)
-                if not task:
-                    tsk=await TaskDb.GetTask(task_id=task_id)
-                    task=TaskDetailGetAll.model_validate(task)
-                   
-                    await r.set_cache(task_id,tsk)
-
-    message=message_service(task=task,mode="submit",submission=submission)
-    submission_id=await SubDb.SubmissionPost(task_id=task_id,user_id=user['id'],submission=submission,message=message)   
-   
-    
-    
-    return dict(
-        id=submission_id.id,
-        status=submission_id.status,
-        created_at=submission_id.creadet_at)
-
-
-

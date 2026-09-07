@@ -4,7 +4,7 @@ import logging
 
 sol=f"""
 class Solution:
-    def two_sum_sorted(numbers: list[int], target: int) -> list[int]:
+    def two_sum_sorted(self,numbers: list[int], target: int) -> list[int]:
         left = 0
         right = len(numbers) - 1
         while left < right:
@@ -30,7 +30,7 @@ async def test_run_task(auth_client: AsyncClient):
     logging.info('решение отпарвлено')
     logging.info('ждем ответа... ')
     
-    get_responce=await auth_client.get(f'solution/run/result/{submission_id}')
+    get_responce=await auth_client.get(f'solution/result/{submission_id}')
 
     assert get_responce.status_code==200
 
@@ -48,6 +48,6 @@ async def test_submit_task(auth_client: AsyncClient):
     logging.info('решение отпарвлено')
     logging.info('ждем ответа... ')
     
-    get_responce=await auth_client.get(f'solution/submit/result/{submission_id}')
+    get_responce=await auth_client.get(f'solution/result/{submission_id}')
 
     assert get_responce.status_code==200

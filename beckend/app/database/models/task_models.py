@@ -119,8 +119,7 @@ class Category(Base):
 class OutboxSub(Base):
     __tablename__ = 'outboxsub'
     
-    id : Mapped[UUID] = mapped_column(UUID(as_uuid=True),primary_key=True)
-    submission_id : Mapped[UUID] = mapped_column(UUID(as_uuid=True)) 
+    submission_id : Mapped[UUID] = mapped_column(UUID(as_uuid=True),primary_key=True) 
     message : Mapped[dict]=mapped_column(json_type)
     count : Mapped[int]=mapped_column(Integer,default=0,nullable=False)
     failed_at : Mapped[datetime|None] = mapped_column(DateTime(timezone=True), nullable=True ,default=None)

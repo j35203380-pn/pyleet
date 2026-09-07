@@ -22,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-LimitSem=asyncio.Semaphore(15)
+LimitSem=asyncio.Semaphore(20)
 
 broker=RabbitBroker(settings.RABBIT_BROKER_URL)
 QUEUE_EXEC=RabbitQueue('solution.execute')
@@ -33,7 +33,7 @@ redis=Annotated[Redis,Context('redis')]
 DOCKER=Annotated[aiodocker.Docker,Context('docker')]
 
 
-@broker.subscriber(queue=QUEUE_EXEC,exchange=EXCHANGE,channel=Channel(prefetch_count=30),ack_policy=AckPolicy.NACK_ON_ERROR)
+@broker.subscriber(queue=QUEUE_EXEC,exchange=EXCHANGE,channel=Channel(prefetch_count=40),ack_policy=AckPolicy.NACK_ON_ERROR)
 async def run_code(msg: RabbitMessage,r: redis,docker: DOCKER):
 
     print('начался брокер перехват сообщения')
@@ -50,8 +50,15 @@ async def run_code(msg: RabbitMessage,r: redis,docker: DOCKER):
         raise RuntimeError(f"не смог выполнить submission {correlation_id} — инфраструктурный сбой")
     logging.info('взять результаты контенйера')
     ressub=ExecutionResult(**result).model_dump_json()
+    print(body.mode)
+    logging.info('проверяем брокер')
     if body.mode == 'submit':
-        await broker.publish(message=ressub,queue=QUEUE_RES,exchange=EXCHANGE,correlation_id=correlation_id)
+        try:
+            logging.info('Передаем в броке inbox')
+            await broker.publish(message=ressub,queue=QUEUE_RES,exchange=EXCHANGE,correlation_id=correlation_id)
+            logger.info('брокер inbox успешно передан')
+        except Exception as e:
+            logging.warning(f'ошибка при иередаче к брокеру ')
     key=f'result:submission:{correlation_id}'
     try:
         await r.set(key, ressub, ex=90)

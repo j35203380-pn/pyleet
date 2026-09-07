@@ -1,8 +1,7 @@
 from app.database.models import InboxSub,Submission
 from app.database.db import AsyncLocal
-from app.brokers import broker
 from app.database.shemas.task_shemas import ExecutionResult,SubmissionUpdateADD
-from faststream.rabbit import RabbitMessage,RabbitQueue,RabbitExchange,Channel
+from faststream.rabbit import RabbitMessage,RabbitQueue,RabbitExchange,Channel,RabbitRouter
 from faststream import AckPolicy
 from uuid import UUID
 from sqlalchemy import update,insert
@@ -11,15 +10,27 @@ from app.routers.service import determine_statuse
 import logging
 
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s - %(message)s",
+)
+
+logger = logging.getLogger(__name__)
+
+inboxrout=RabbitRouter()
+
+
 EXCHANGE=RabbitExchange('submission')
 QUEUE=RabbitQueue('solution.result')
 
 
-@broker.subscriber(queue=QUEUE,exchange=EXCHANGE,channel=Channel(prefetch_count=50),ack_policy=AckPolicy.NACK_ON_ERROR)
+@inboxrout.subscriber(queue=QUEUE,exchange=EXCHANGE,channel=Channel(prefetch_count=50),ack_policy=AckPolicy.NACK_ON_ERROR)
 async def inbox_sub(msg: RabbitMessage):
+    print('inbxostrater')
+    logging.info('брокер inbox  взял запрос ')
     result=ExecutionResult.model_validate_json(msg.body)
     submission_id=UUID(msg.correlation_id)
-    status=determine_statuse(exit_code=result.exit_code)
+    status=determine_statuse(exit_code=result.exit_code,test_results=result.test_result)
     data=SubmissionUpdateADD(status=status,
                              exit_code=result.exit_code,
                              output=result.output,

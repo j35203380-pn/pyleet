@@ -3,10 +3,11 @@ from app.main import app
 import pytest
 import pytest_asyncio
 from asgi_lifespan import LifespanManager
-
+from app.database.db import test_base
 
 @pytest_asyncio.fixture(scope='function',loop_scope='function')
 async def client():
+    await test_base()
     async with LifespanManager(app) as manager:
         transport=ASGITransport(app=app)
         async with AsyncClient(transport=transport,base_url='http://test') as cl:
