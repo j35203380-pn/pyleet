@@ -10,11 +10,15 @@ from app.redis_client import RedisConnect
 from redis.asyncio import Redis
 from typing import Annotated
 import logging
+import asyncio
+
 
 redis=Annotated[Redis,Depends(RedisConnect)]
 
+_semaphore=asyncio.Semaphore(20)
 
-ph=PasswordHasher()
+
+ph=PasswordHasher(parallelism=3)
 
 oauth_shemas=OAuth2PasswordBearer(tokenUrl='auth/login')
 
@@ -39,7 +43,7 @@ def PasswordVerifi(hash,password: str):
         return False
 
 
-def create_token(user_id: int,
+async def create_token(user_id: int,
                 token_type,expires_delta):
 
     payload ={
@@ -54,35 +58,37 @@ def create_token(user_id: int,
 
 
 
-def decode_token(token: str):
-    try:
-        return jwt.decode(token,settings.PUBLIC_KEY,algorithms=[settings.ALGORITHM])
-
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401,detail='Токен истек')
-
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401,detail='невалидный токен')
-
-
-
 async def current_token(r: redis,token: str=Depends(oauth_shemas)):
-    logging.info('проверка токена')
-    payload=decode_token(token)
-    logging.info('токен декодирован успешно')
-    key=f'black_list:{payload[JTI]}'
 
-    black_list=await r.get(key)
-    print(black_list)
-    if black_list:
-        logging.info('токен невалидный')
-        raise HTTPException(status_code=400,detail='зайдите снова')
-    
-    if payload[TYPE] != 'access':
-        logging.info('тип токена неправильный ')
-        raise HTTPException(status_code=401,detail='ожидался access ')
-    logging.info('токен успешно прошел ')
-    return {'id': int(payload[SUB]),'type': payload[TYPE]}
+    async with _semaphore:
+
+        try:
+            payload=jwt.decode(token,settings.PUBLIC_KEY,algorithms=[settings.ALGORITHM])
+                      
+            key=f'black_list:{payload[JTI]}'
+
+            black_list=await r.get(key)
+           
+            if black_list:
+                logging.info('токен невалидный')
+                raise HTTPException(status_code=400,detail='зайдите снова')
+            
+            if payload[TYPE] != 'access':
+                logging.info('тип токена неправильный ')
+                raise HTTPException(status_code=401,detail='ожидался access ')
+            logging.info('токен успешно прошел ')
+
+        
+            return {'id': int(payload[SUB]),'type': payload[TYPE]}
+
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(status_code=401,detail='Токен истек')
+
+        except jwt.InvalidTokenError:
+            raise HTTPException(status_code=401,detail='невалидный токен')
+
+
+
     
    
         

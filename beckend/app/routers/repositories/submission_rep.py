@@ -5,10 +5,10 @@ from app.exceptions import SubmissionNOtFound
 from app.database.models import Submission,OutboxSub
 import asyncio
 from uuid import UUID
+from app.routers.repositories.shemas import ExecutionReq
+import msgspec
 
-
-
-LimitDB=asyncio.Semaphore(20)
+_semaphore=asyncio.Semaphore(20)
 
 
 
@@ -19,52 +19,26 @@ class UserSubRepositories:
 
 
 
-    async def SubmissionPost(self,task_id: int, user_id: int,submission: SubmissionCreate,message: ExecutionRequest):
-        
-        async with self._db.begin():
-
-            subdict=dict(user_id=user_id,task_id=task_id,code=submission.code)
-            submis=await self._db.execute(
-                insert(Submission)
-                .values(**subdict)
-                .returning(Submission)
-                )
-            sub=submis.scalar_one_or_none()
-
-            outbox=dict(submission_id=sub.id,message=message.model_dump()            )
-            await self._db.execute(
-                insert(OutboxSub)
-                .values(**outbox))
-        return sub
-            
-            
-
-
-
-
-    async def SubmissionUpdate(self,submission_id: UUID,user_id: int,statuse: str,tasks: ExecutionResult):
-        sub=SubmissionUpdateADD(
-            status=statuse,
-            exit_code=tasks.exit_code,
-            output=tasks.output,
-            time_ms=tasks.time_ms
-        )
-
-        
-        async with LimitDB:
+    async def SubmissionPost(self,task_id: int, user_id: int,message: ExecutionReq):
+        payload=msgspec.to_builtins(message)
+        async with _semaphore:
+                
             async with self._db.begin():
 
-                res = await self._db.execute(
-                                     update(Submission)
-                                    .where(and_(
-                                            Submission.id==submission_id,
-                                            Submission.user_id==user_id))
-                                    .values(**sub.model_dump())
-                                    .returning(Submission)
-                                                            )
-                sub=res.scalar_one_or_none()
-                print(sub)
-                if not sub:
-                    raise SubmissionNOtFound()
+                subdict=dict(user_id=user_id,task_id=task_id,code=message.code)
+                submis=await self._db.execute(
+                    insert(Submission)
+                    .values(**subdict)
+                    .returning(Submission)
+                    )
+                sub=submis.scalar_one_or_none()
+
+                outbox=dict(submission_id=sub.id,message=payload)
+                await self._db.execute(
+                    insert(OutboxSub)
+                    .values(**outbox))
+            return sub
             
-        return sub
+            
+
+

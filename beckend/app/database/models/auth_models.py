@@ -1,8 +1,7 @@
 from app.database.db import Base
 from sqlalchemy.orm import Mapped,mapped_column,relationship
-from sqlalchemy import Enum,func,DateTime
+from sqlalchemy import func,DateTime
 from typing import Annotated
-import enum
 from datetime import datetime
 
 
@@ -19,7 +18,7 @@ class User(Base):
     nik_name : Mapped[str] = mapped_column(unique=True)
     
     email : Mapped[str] = mapped_column(unique=True)
-    password : Mapped[str]
+    password : Mapped[str] 
 
     create_date : Mapped[datetime] = mapped_column(DateTime(timezone=True),
                                     server_default=func.now()) 

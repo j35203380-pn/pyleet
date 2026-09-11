@@ -1,14 +1,28 @@
-from pydantic import BaseModel
+from msgspec import Struct
+from enum import Enum
 
-class ExecutionResult(BaseModel):
+class SubmissionStatus(str, Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    ACCEPTED = "accepted"        
+    WRONG_ANSWER = "wrong_answer" 
+    RUNTIME_ERROR = "runtime_error"  
+    TIME_LIMIT_EXCEEDED = "time_limit_exceeded" 
+
+
+
+class ExecutionDocker(Struct):
     logs: list[str]
     output: str
     exit_code: int
-    test_result: list[dict]|None=None
     time_ms: float
+    test_result: list[dict]|None=None
+
+class ExecutionResult(ExecutionDocker):
+    status:SubmissionStatus=SubmissionStatus.PENDING
 
 
-class ExecutionRequest(BaseModel):
+class ExecutionRequest(Struct):
     mode: str
     code: str
     method_name: str

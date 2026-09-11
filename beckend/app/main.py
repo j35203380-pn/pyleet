@@ -11,23 +11,23 @@ from app.redis_client import RateLimite
 from app.brokers.connection import broker 
 from app.Admin.models import UserAdminTask,UserAdminCategory,authenfication_backend
 from sqladmin import Admin
-from app.database.db import engine,Base
-from app.workers.outbox_relay import outbox_res
+from app.database.db import engine
 
-import asyncio
 
-print(broker)
-print(broker.routers)
-print(broker.subscribers)
+
+
+
+
 @asynccontextmanager
 async def lifespan(app:FastAPI):
        
     await broker.start()
-    outbox_task=asyncio.create_task(outbox_res())
     
     pool=ConnectionPool.from_url(
-        url=settings.REDISE_URL,decode_responses=True
+        url=settings.REDISE_URL,decode_responses=True,
+        max_connections=50
     )
+    
     
     redis=Redis(connection_pool=pool)
     limite=RateLimite(redis=redis)
@@ -35,12 +35,7 @@ async def lifespan(app:FastAPI):
     app.state.redis=redis
 
     yield 
-    outbox_task.cancel()
-    try:
-        await outbox_task
-    except asyncio.CancelledError:
-        pass
-
+    
     await broker.stop()
     await redis.aclose()
     await pool.aclose()
@@ -55,7 +50,7 @@ app.include_router(routers_rout)
 
 
 
-@app.middleware('http')
+#@app.middleware('http')
 async def rate_limite(request: Request,call_next):
     limite=request.app.state.limite
     client=request.client.host if request.client else 'uknown'

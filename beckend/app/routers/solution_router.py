@@ -11,9 +11,12 @@ from app.database.shemas.task_shemas import (ExecutionResult,SubmissionCreate,
                                              SubmissionAccepted,SubmissionListItemGet,
                                              ExecutionRequest,TaskDetailGet,TaskDetailGetAll)
 from uuid import UUID,uuid4
-from app.routers.service import determine_statuse,message_service
+from app.routers.service import message_service
 import asyncio
 import logging
+import msgspec
+
+encodermg=msgspec.json.Encoder()
 
 router=APIRouter(prefix='/solution',
                  tags=['Решать Задачи'],
@@ -66,6 +69,7 @@ async def submit_task(task_id: int,submission: SubmissionCreate
     
     submission_id=str(uuid4())
     task=await r.get_cache(task_id,TaskDetailGetAll)
+
     if not task:
         logging.info('кеш пустой ,запрос в бд ')
         lock=r.lock_key(task_id)
@@ -79,17 +83,19 @@ async def submit_task(task_id: int,submission: SubmissionCreate
                     logging.info('успешно прошел кешированеи')
 
     logging.info("message=ExecuitonResult начинает обрабатывать ")
-    message=message_service(task=task,mode="run",submission=submission)
-    
+    message=message_service(task=task,mode="run",submission=submission.code)
+    ms=encodermg.encode(message)
     logging.info("message=ExecuitonResult успешно обрабобтал ")
     logging.info('публикация решение клиента')
     await broker.publish(
-                message.model_dump_json(),queue=queue,
+                message=ms,queue=queue,
                 exchange=exchange,
                 correlation_id=submission_id
                 )           
     logging.info('успешно отправлен решение')
     return submission_id
+
+
 
 
 
@@ -107,6 +113,8 @@ async def submit_task(task_id: int,submission: SubmissionCreate
     
     task=await r.get_cache(task_id,TaskDetailGetAll)
     
+    if task: logging.info('чтение из кеша ')
+    
     if not task:
        
         lock=r.lock_key(task_id)
@@ -119,11 +127,13 @@ async def submit_task(task_id: int,submission: SubmissionCreate
                    
                     await r.set_cache(task_id,task)
 
-    message=message_service(task=task,mode="submit",submission=submission)
-    print(message)
+    message=message_service(task=task,mode="submit",submission=submission.code)
+  
     
-    submission_id=await SubDb.SubmissionPost(task_id=task_id,user_id=user['id'],
-                                             submission=submission,message=message)   
+    submission_id=await SubDb.SubmissionPost(
+                        task_id=task_id,
+                        user_id=user['id'],
+                        message=message)   
    
     
     
@@ -142,17 +152,17 @@ async def result_submit(submission_id: str,queue:PubSub,r: redis):
     logging.info('ожидаем ответ от брокера ')
     key=f'result:submission:{submission_id}'
     res=await r.get(key)
-    if res: return ExecutionResult.model_validate_json(res)
+    if res: return ExecutionResult.model_validate_json(res).model_dump()
     await queue.subscribe(submission_id)
     try:
         logging.info('слушаем эфир редис')
-        async with asyncio.timeout(10):
+        async with asyncio.timeout(3):
             async for message in queue.listen():
                 print(message)
                 if message['type'] == 'message':
                     sub=ExecutionResult.model_validate_json(message['data'])
-                    statuse=determine_statuse(sub.exit_code,sub.test_result)
-                    return {**sub.model_dump(),'status': statuse}
+                    
+                    return {**sub.model_dump()}
                     
     except TimeoutError:
         ms=await r.get(key)

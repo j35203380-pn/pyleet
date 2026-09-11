@@ -30,20 +30,7 @@ class Settings(BaseSettings):
     RBROKER_PORT: int
     RBROKER_PASSWORD: str
 
-    secret_key_path : str = Field(validation_alias='JWT_SECRET_KEY')
-    public_key_path : str = Field(validation_alias="JWT_PUBLIC_KEY")
-    ALGORITHM : str
-
     
-    @cached_property
-    def SECRET_KEY(self):
-        file_path=BASE_DIR / self.secret_key_path
-        return file_path.read_text()
-
-    @cached_property
-    def PUBLIC_KEY(self) -> str:
-        file_path=BASE_DIR / self.public_key_path
-        return file_path.read_text()
 
     @property
     def DATABASE_URL(self):
@@ -61,16 +48,5 @@ class Settings(BaseSettings):
 settings=Settings()
 
 
-class SubmissionStatus(str, Enum):
-    PENDING = "pending"
-    RUNNING = "running"
-    ACCEPTED = "accepted"        
-    WRONG_ANSWER = "wrong_answer" 
-    RUNTIME_ERROR = "runtime_error"  
-    TIME_LIMIT_EXCEEDED = "time_limit_exceeded" 
 
 
-class DifficultyLevel(str,Enum):
-    EASY='EASY'
-    MEDIUM='MEDIUM'
-    HARD='HARD'

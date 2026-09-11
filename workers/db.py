@@ -1,12 +1,11 @@
 from config import settings
-from sqlalchemy.orm import  DeclarativeBase,Mapped,mapped_column
+from sqlalchemy.orm import  DeclarativeBase
 from sqlalchemy.ext.asyncio import async_sessionmaker,AsyncSession,create_async_engine
 
 
 DATABASE_URL=settings.DATABASE_URL
 
-#во время тестирование подлючите sqlite
-#DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+
 
 engine=create_async_engine(DATABASE_URL,
                            pool_size=20,
@@ -23,12 +22,6 @@ AsyncLocal=async_sessionmaker(bind=engine,
 class Base(DeclarativeBase):
     pass
 
-async def get_db():
-    async with AsyncLocal() as session:
-        yield session
 
 
 
-async def test_base():
-    async with engine.begin() as conn:
-         await conn.run_sync(Base.metadata.create_all)

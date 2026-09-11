@@ -81,6 +81,7 @@ class SubmissionUpdateADD(BaseModel):
 
 
 class ExecutionResult(BaseModel):
+    status: str
     logs: list[str]
     output: str
     exit_code: int
