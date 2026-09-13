@@ -166,9 +166,15 @@ async def result_submit(submission_id: str,queue:PubSub,r: redis):
                     
     except TimeoutError:
         ms=await r.get(key)
-        if ms : return ExecutionResult.model_validate_json(ms)
-        return {'status': 'timeout'}
+        if ms : 
+            result=ExecutionResult.model_validate_json(ms)
+        else:
+            return {'status': 'timeout'}
     finally:
-        await queue.unsubscribe(submission_id)
-        await queue.aclose()
-    
+        try:
+            await queue.unsubscribe(submission_id)
+            await queue.aclose()
+        except Exception as e:
+            logging.warning(f'ошибка при закрытии pubsub {e}')
+
+    return result

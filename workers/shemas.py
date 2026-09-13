@@ -1,6 +1,6 @@
 from msgspec import Struct
 from enum import Enum
-
+from uuid import UUID
 
 class SubmissionStatus(str, Enum):
     PENDING = "pending"
@@ -21,6 +21,7 @@ class DifficultyLevel(str,Enum):
 
 
 class SubmissionUpdate(Struct):
+    submission_id: UUID
     status: SubmissionStatus
     exit_code: int
     output: str

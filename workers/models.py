@@ -18,8 +18,7 @@ class Submission(Base):
     __tablename__ = 'submissions'
 
     id : Mapped[UUID] = mapped_column(UUID(as_uuid=True),primary_key=True,default=uuid4)
-    user_id : Mapped[int] = mapped_column(ForeignKey('users.id',ondelete='CASCADE'),index=True)
-    task_id : Mapped[int] = mapped_column(ForeignKey('tasks.id',ondelete='CASCADE'),index=True)
+  
     code : Mapped[str] = mapped_column(Text)
     status : Mapped[SubmissionStatus] = mapped_column(Enum(SubmissionStatus) 
                                                       ,default=SubmissionStatus.PENDING)

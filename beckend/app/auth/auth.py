@@ -18,7 +18,7 @@ redis=Annotated[Redis,Depends(RedisConnect)]
 _semaphore=asyncio.Semaphore(20)
 
 
-ph=PasswordHasher(parallelism=3)
+ph=PasswordHasher()
 
 oauth_shemas=OAuth2PasswordBearer(tokenUrl='auth/login')
 
