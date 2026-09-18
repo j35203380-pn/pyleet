@@ -1,10 +1,11 @@
 from faststream import FastStream,ContextRepo
-from connect_broker import broker
+from workers.connect_broker import broker
 from contextlib import asynccontextmanager
 import asyncio
-from outbox.outbox_relay import outbox_run # вот это класс outbox котоый его запускает
+# вот это класс outbox котоый его запускает
+from workers.outbox.outbox_relay import outbox_run
 from sqlalchemy.exc import SQLAlchemyError
-from inbox.inbox_relay import queue_work,inbox_workers
+from workers.inbox.inbox_relay import queue_work,inbox_workers
 
 
 
@@ -35,3 +36,4 @@ async def lifespan(contex: ContextRepo):
       
 
 app=FastStream(broker,lifespan=lifespan)
+

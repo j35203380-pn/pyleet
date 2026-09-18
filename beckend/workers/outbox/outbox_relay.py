@@ -1,14 +1,13 @@
-from models import OutboxSub
-from db import AsyncLocal
+from app.database.models import OutboxSub
+from app.database.db import AsyncLocal
 from sqlalchemy import select,and_
 from faststream.rabbit import RabbitExchange,RabbitQueue
 import asyncio
 from faststream.rabbit import RabbitRouter,RabbitPublisher
 from datetime import datetime,timezone
 import logging
-from dataclasses import dataclass
 from time import time
-from connect_broker import broker
+from workers.connect_broker import broker
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +25,7 @@ QUEUE = RabbitQueue("solution.execute")
 
 
 
-@dataclass(slots=True)
-class ClaimedItem:
-    submission_id: str
-    message: bytes | str
-    count: int
+
 
 _semaphone=asyncio.Semaphore(PUBLISH_CONCURRENCY)
 

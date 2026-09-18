@@ -61,17 +61,19 @@ class AuthRepositories:
             
             logging.info('в процессе UserLogin')
             us=await self._db.execute(
-                select(User)
+                select(User.id,User.password)
                 .where(or_(
                         User.nik_name==users.username,
                         User.email==users.username)))
-            user=us.scalar_one_or_none()
+            user=us.one_or_none()
+            
             if not user:
                 raise UserNotFound()
-            password=await asyncio.to_thread(PasswordVerifi,user.password,users.password)
+            _id,_password = user[0],user[1]
+            password=await asyncio.to_thread(PasswordVerifi,_password,users.password)
         if not password:
             raise InvalidPasswordException()
-        token= await create_token(user_id=user.id,token_type= 'access',expires_delta=30)
+        token= await create_token(user_id=_id,token_type= 'access',expires_delta=30)
         if not token:
             raise UserNotFound()
         logging.info('UserLogin прошел успешно')

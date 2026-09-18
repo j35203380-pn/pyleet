@@ -53,7 +53,9 @@ async def create_token(user_id: int,
         JTI : str(uuid.uuid4())
     }
 
-    token=jwt.encode(payload,settings.SECRET_KEY,algorithm=settings.ALGORITHM)
+    token=await asyncio.to_thread(jwt.encode,payload,
+                                  settings.SECRET_KEY,
+                                  algorithm=settings.ALGORITHM)
     return token
 
 
@@ -63,7 +65,9 @@ async def current_token(r: redis,token: str=Depends(oauth_shemas)):
     async with _semaphore:
 
         try:
-            payload=jwt.decode(token,settings.PUBLIC_KEY,algorithms=[settings.ALGORITHM])
+            payload=await asyncio.to_thread(jwt.decode,
+                                            token,settings.PUBLIC_KEY
+                                            ,algorithms=[settings.ALGORITHM])
                       
             key=f'black_list:{payload[JTI]}'
 

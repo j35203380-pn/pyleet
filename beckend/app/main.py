@@ -8,7 +8,6 @@ from app.routers import approuter as routers_rout
 from app.exceptions import AllExceptions
 import logging,traceback
 from app.redis_client import RateLimite
-from app.brokers.connection import broker 
 from app.Admin.models import UserAdminTask,UserAdminCategory,authenfication_backend
 from sqladmin import Admin
 from app.database.db import engine
@@ -21,8 +20,7 @@ from app.database.db import engine
 @asynccontextmanager
 async def lifespan(app:FastAPI):
        
-    await broker.start()
-    
+        
     pool=ConnectionPool.from_url(
         url=settings.REDISE_URL,decode_responses=True,
         max_connections=50
@@ -36,7 +34,7 @@ async def lifespan(app:FastAPI):
 
     yield 
     
-    await broker.stop()
+    
     await redis.aclose()
     await pool.aclose()
 
