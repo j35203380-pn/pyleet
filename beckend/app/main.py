@@ -48,7 +48,7 @@ app.include_router(routers_rout)
 
 
 
-#@app.middleware('http')
+@app.middleware('http')
 async def rate_limite(request: Request,call_next):
     limite=request.app.state.limite
     client=request.client.host if request.client else 'uknown'

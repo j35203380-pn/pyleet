@@ -1,10 +1,7 @@
 from app.database.db import AsyncSession
-from sqlalchemy import insert,and_,update
-from app.database.shemas.task_shemas import SubmissionCreate,SubmissionUpdateADD,ExecutionResult,ExecutionRequest
-from app.exceptions import SubmissionNOtFound
+from sqlalchemy import insert
 from app.database.models import Submission,OutboxSub
 import asyncio
-from uuid import UUID
 from app.routers.repositories.shemas import ExecutionReq
 import msgspec
 

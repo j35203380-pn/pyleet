@@ -2,9 +2,8 @@ from app.database.db import AsyncSession
 from sqlalchemy import select,func
 from sqlalchemy.orm import joinedload,selectinload
 from app.exceptions import TaskNotFoundError                     
-from app.database.models import Task,Category,Comments
+from app.database.models import Task
 import asyncio
-from config import DifficultyLevel
 import logging
 
 LimitDB=asyncio.Semaphore(20)

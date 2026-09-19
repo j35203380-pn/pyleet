@@ -1,13 +1,11 @@
-from fastapi import APIRouter,HTTPException,Depends,status,BackgroundTasks
+from fastapi import APIRouter,Depends,BackgroundTasks
 from app.database.db import AsyncSession,get_db
 from app.auth.auth import current_token
-from app.dependcies import ReschePoints
 from typing import Annotated
 from app.routers.repositories import CategoryRepositories 
 from app.redis_client import RedisConnect,RedisCache
 from redis.asyncio import Redis
-from app.database.shemas.task_shemas import CategoriesItemList, CategoryAllGet,CategoryAllCreate
-import  asyncio
+from app.database.shemas.task_shemas import CategoriesItemList, CategoryAllGet
 import logging
 
 

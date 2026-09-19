@@ -1,12 +1,11 @@
-from fastapi import APIRouter,HTTPException,Depends,status
+from fastapi import APIRouter,Depends
 from app.database.db import AsyncSession,get_db
 from app.auth.auth import current_token
-from app.dependcies import ReschePoints
 from typing import Annotated
 from app.routers.repositories import TaskRepositories 
 from app.redis_client import RedisConnect,RedisCache
 from redis.asyncio import Redis
-from app.database.shemas.task_shemas import CategoriesItemList,TaskListItemGet,TaskDetailGet
+from app.database.shemas.task_shemas import TaskListItemGet,TaskDetailGet
 from config import DifficultyLevel
 import logging
 

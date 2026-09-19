@@ -1,8 +1,6 @@
 from app.database.db import AsyncSession 
 from app.database.db import AsyncSession
 from sqlalchemy import insert,select,or_
-from sqlalchemy.orm import joinedload
-from app.database.shemas.auth_shemas import UserPost
 from fastapi import status
 from app.exceptions import InvalidPasswordException ,UserNotFound
 from app.database.models import User
