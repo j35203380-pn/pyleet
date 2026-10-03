@@ -1,6 +1,6 @@
 from fastapi import APIRouter,Depends,BackgroundTasks
 from app.database.db import AsyncSession,get_db
-from app.auth.auth import current_token
+from app.auth.security import current_token
 from typing import Annotated
 from app.routers.repositories import CategoryRepositories 
 from app.redis_client import RedisConnect,RedisCache

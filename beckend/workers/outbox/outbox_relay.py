@@ -11,14 +11,14 @@ from workers.connect_broker import broker
 
 logger = logging.getLogger(__name__)
 
-# --- tuning knobs ------------------------------------------------------
-MAX_RETRIES = 5              # attempts before we give up on a submission
-MAX_BACKOFF_SEC = 60          # ceiling for exponential backoff
-BATCH_SIZE = 200              # rows claimed per DB round trip
-PUBLISH_CONCURRENCY = 50      # лимит семафон
-PUBLISH_TIMEOUT_SEC = 10    # a single publish must finish or die within this
-IDLE_SLEEP_SEC = 1.0          # ждем если бд пусто
-ERROR_SLEEP_SEC = 2.0         # sleep after an unexpected loop-level error
+
+MAX_RETRIES = 5              
+MAX_BACKOFF_SEC = 60         
+BATCH_SIZE = 200             
+PUBLISH_CONCURRENCY = 50     
+PUBLISH_TIMEOUT_SEC = 10    
+IDLE_SLEEP_SEC = 1.0        
+ERROR_SLEEP_SEC = 2.0       
 
 EXCHANGE = RabbitExchange("submission")
 QUEUE = RabbitQueue("solution.execute")

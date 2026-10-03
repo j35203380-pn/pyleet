@@ -4,19 +4,13 @@ from sqlalchemy import insert,select,or_
 from fastapi import status
 from app.exceptions import InvalidPasswordException ,UserNotFound
 from app.database.models import User
-from app.auth.auth import PasswordHashed,PasswordVerifi,create_token
+from beckend.app.auth.security import PasswordHashed,PasswordVerifi,create_token
 from fastapi.security import OAuth2PasswordRequestForm
 import asyncio
 import logging
 from dataclasses import dataclass
 
-@dataclass(slots=True)
-class UserAuthAdd:
-    name: str
-    nik_name: str
-    email: str
-    password: str
-    password_confim: str
+
 
 
 LimitDB=asyncio.Semaphore(20)
@@ -30,17 +24,10 @@ class AuthRepositories:
 
 
 
-    async def UserAdd(self,users: UserAuthAdd):
+    async def UserAdd(self,us: dict):
         async with LimitDB:
 
-            logging.info('в процессе UserAdd')
-
-            password_hash=await asyncio.to_thread(PasswordHashed,users.password)
-        
-            us=dict(
-                name=users.name,nik_name=users.nik_name,
-                email=users.email,password=password_hash
-            )
+            
             async with self._db.begin():
 
                 await self._db.execute(
@@ -48,31 +35,23 @@ class AuthRepositories:
                     .values(**us)
                 )
             
-            logging.info('UserAdd прошел успешно')
-            return status.HTTP_201_CREATED
-
-
-
-    async def UserLogin(self,users: OAuth2PasswordRequestForm):
+            
+            
+    async def UserLogin(self,username: str):
 
         async with LimitDB:
             
             logging.info('в процессе UserLogin')
-            us=await self._db.execute(
-                select(User.id,User.password)
-                .where(or_(
-                        User.nik_name==users.username,
-                        User.email==users.username)))
-            user=us.one_or_none()
-            
-            if not user:
-                raise UserNotFound()
-            _id,_password = user[0],user[1]
-            password=await asyncio.to_thread(PasswordVerifi,_password,users.password)
-        if not password:
-            raise InvalidPasswordException()
-        token= await create_token(user_id=_id,token_type= 'access',expires_delta=30)
-        if not token:
-            raise UserNotFound()
-        logging.info('UserLogin прошел успешно')
-        return token
+            async with self._db.begin():
+
+                us=await self._db.execute(
+                    select(User.id,User.password)
+                    .where(or_(
+                            User.nik_name==username,
+                            User.email==username)))
+                user=us.one_or_none()
+                
+                if not user:
+                    raise UserNotFound()
+        
+        return user

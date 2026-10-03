@@ -1,7 +1,7 @@
 from app.database.shemas.task_shemas import CommentsCreate,CommetnsGet
 from fastapi import APIRouter,Depends,status
 from app.database.db import AsyncSession,get_db
-from app.auth.auth import current_token
+from app.auth.security import current_token
 from typing import Annotated
 from app.routers.repositories import CommRepositories 
 import logging

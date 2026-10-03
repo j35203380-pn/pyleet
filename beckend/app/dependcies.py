@@ -1,5 +1,5 @@
 from fastapi import HTTPException,Depends
-from app.auth.auth import current_token
+from app.auth.security import current_token
 from typing import Annotated
 
 CurUs=Annotated[dict,Depends(current_token)]

@@ -4,7 +4,7 @@ from app.redis_client import RedisCache,RedisConnect
 from workers.connect_broker import broker
 from typing import Annotated
 from app.routers.repositories import UserSubRepositories,TaskRepositories
-from app.auth.auth import current_token
+from app.auth.security import current_token
 from redis.asyncio import Redis,client
 from faststream.rabbit import RabbitBroker,RabbitQueue,RabbitExchange
 from app.database.shemas.task_shemas import (ExecutionResult,SubmissionCreate,
