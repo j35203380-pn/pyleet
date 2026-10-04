@@ -1,15 +1,14 @@
 from fastapi import APIRouter,Depends
-from app.database.db import get_db,AsyncSession
 from app.redis_client import RedisCache,RedisConnect
-from workers.connect_broker import broker
+from app.broker.connect_broker import broker
 from typing import Annotated
-from app.routers.repositories import UserSubRepositories,TaskRepositories
 from app.auth.security import current_token
 from redis.asyncio import Redis,client
-from faststream.rabbit import RabbitBroker,RabbitQueue,RabbitExchange
+from faststream.rabbit import RabbitQueue,RabbitExchange
 from app.database.shemas.task_shemas import (ExecutionResult,SubmissionCreate,
                                              SubmissionAccepted,SubmissionListItemGet,
                                              ExecutionRequest,TaskDetailGet,TaskDetailGetAll)
+from app.service import sol_service,task_serv,SolutionService,TaskService
 from uuid import UUID,uuid4
 from app.routers.service import message_service
 import asyncio
@@ -25,14 +24,11 @@ router=APIRouter(prefix='/solution',
 
 redis= Annotated[Redis,Depends(RedisConnect)]
 
+def solution_service():
+    return sol_service
 
-def connect_sub_db(db: Annotated[AsyncSession,Depends(get_db)]):
-    return UserSubRepositories(db)
-
-
-def connect_task_db(db: Annotated[AsyncSession,Depends(get_db)]):
-    return TaskRepositories(db)
-
+def task_service():
+    return task_serv
 
 
 def connect_red(r: redis):
@@ -43,8 +39,8 @@ def connect_red(r: redis):
 def connect_pubsub(r: redis):
     return  r.pubsub()
 
-TASKDB= Annotated[TaskRepositories, Depends(connect_task_db)]
-SUBDB= Annotated[UserSubRepositories, Depends(connect_sub_db)]
+SolutionServ=Annotated[SolutionService,Depends(solution_service)]
+TaskServ=Annotated[TaskService,Depends(task_service)]
 CurretUser= Annotated[dict, Depends(current_token)]
 RedCache= Annotated[RedisCache, Depends(connect_red)]
 PubSub= Annotated[client.PubSub, Depends(connect_pubsub)]
@@ -57,14 +53,15 @@ exchange=RabbitExchange('submission')
 
 
 
+
 @router.post('/run/{task_id}')
-async def submit_task(task_id: int,submission: SubmissionCreate
-                      ,TaskDb: TASKDB,user: CurretUser,r: RedCache):
+async def submit_task(task_id: int,submission: SubmissionCreate,
+                      user: CurretUser,r: RedCache,ts: TaskServ):
     
     """обязательно напишите  класс ,иначе не сработает
     пример:
     class Solution:
-       def func():"""
+       def func(self, ):"""
     
     
     submission_id=str(uuid4())
@@ -76,17 +73,15 @@ async def submit_task(task_id: int,submission: SubmissionCreate
         async with lock:
                 task=await r.get_cache(task_id,TaskDetailGetAll)
                 if not task:
-                    pow=await TaskDb.GetTask(task_id=task_id)
+                    pow=await ts.get_id(task_id=task_id)
                     logging.info('кеширование ответа')
                     task=TaskDetailGetAll.model_validate(pow)
                     await r.set_cache(task_id,task)
                     logging.info('успешно прошел кешированеи')
 
-    logging.info("message=ExecuitonResult начинает обрабатывать ")
     message=message_service(task=task,mode="run",submission=submission.code)
     ms=encodermg.encode(message)
-    logging.info("message=ExecuitonResult успешно обрабобтал ")
-    logging.info('публикация решение клиента')
+   
     await broker.publish(
                 message=ms,queue=queue,
                 exchange=exchange,
@@ -102,13 +97,13 @@ async def submit_task(task_id: int,submission: SubmissionCreate
 
 
 @router.post('/submit/{task_id}',response_model=SubmissionAccepted)
-async def submit_task(task_id: int,submission: SubmissionCreate
-                              ,TaskDb: TASKDB,SubDb: SUBDB,user: CurretUser,r: RedCache):
+async def submit_task(task_id: int,submission: SubmissionCreate,
+                      user: CurretUser,r: RedCache,ts: TaskServ, ss: SolutionServ):
     
     """обязательно напишите  класс ,иначе не сработает
     пример:
     class Solution:
-       def func():"""
+       def func(self, ):"""
     
     
     task=await r.get_cache(task_id,TaskDetailGetAll)
@@ -122,7 +117,7 @@ async def submit_task(task_id: int,submission: SubmissionCreate
                 task=await r.get_cache(task_id,TaskDetailGetAll)
                 if not task:
                     print('чтение из бд')
-                    pow=await TaskDb.GetTask(task_id=task_id)
+                    pow=await ts.get_id(task_id=task_id)
                     task=TaskDetailGetAll.model_validate(pow)
                    
                     await r.set_cache(task_id,task)
@@ -130,7 +125,7 @@ async def submit_task(task_id: int,submission: SubmissionCreate
     message=message_service(task=task,mode="submit",submission=submission.code)
   
     
-    submission_id=await SubDb.SubmissionPost(
+    submission_id=await ss.add(
                         task_id=task_id,
                         user_id=user['id'],
                         message=message)   

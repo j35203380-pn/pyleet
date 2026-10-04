@@ -1,12 +1,12 @@
 from app.database.models import Task
-from app.routers.repositories.shemas import ExecutionReq
+from app.schemas.solution import SolCreate
 
 
 
 
 
 def message_service(task :Task,mode: str,submission: str):
-    message=ExecutionReq(
+    message=SolCreate(
             mode=mode,
             code=submission,
             method_name=task.method_name,

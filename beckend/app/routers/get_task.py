@@ -2,7 +2,7 @@ from fastapi import APIRouter,Depends
 from app.database.db import AsyncSession,get_db
 from app.auth.security import current_token
 from typing import Annotated
-from app.routers.repositories import TaskRepositories 
+from app.repositories import TaskRepo 
 from app.redis_client import RedisConnect,RedisCache
 from redis.asyncio import Redis
 from app.database.shemas.task_shemas import TaskListItemGet,TaskDetailGet
@@ -16,7 +16,7 @@ routers = APIRouter(prefix='/problems',
 
 
 def connect_db(db : AsyncSession= Depends(get_db)):
-    return TaskRepositories(db)
+    return TaskRepo(db)
 
 
 def connect_redis(redis: Annotated[Redis, Depends(RedisConnect)]):
@@ -27,7 +27,7 @@ def connect_redis(redis: Annotated[Redis, Depends(RedisConnect)]):
 
 
 CurrenUser = Annotated[dict,Depends(current_token)]
-GetDb = Annotated[TaskRepositories,Depends(connect_db)]
+GetDb = Annotated[TaskRepo,Depends(connect_db)]
 Cache = Annotated[RedisCache,Depends(connect_redis)]
 
 
@@ -43,7 +43,7 @@ async def solution_task(task_id: int, db: GetDb,r: Cache):
         async with lock:
             task=await r.get_cache(enum_id=task_id,model=TaskDetailGet)
             if not task:
-                task=await db.GetTask(task_id=task_id)
+                task=await db.get_task(task_id=task_id)
                 tsk=TaskDetailGet.model_validate(task)
                 await r.set_cache(task_id,tsk)
     logging.info('task/solution/task_id-get_task успешно ')
@@ -63,7 +63,7 @@ async def get_task(level: DifficultyLevel , db: GetDb, r: Cache):
     async with lock:
         result=await r.get_cache(enum_id=level)
         if result: return result
-        result = await db.LevelTask(level=level)
+        result = await db.level_task(level=level)
         await r.set_cache_list(enum_id=level,pow=result,model=TaskListItemGet)
     logging.info('ответ из бд')
     return result

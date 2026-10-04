@@ -3,7 +3,7 @@ from fastapi import APIRouter,Depends,status
 from app.database.db import AsyncSession,get_db
 from app.auth.security import current_token
 from typing import Annotated
-from app.routers.repositories import CommRepositories 
+from app.repositories import CommRepositories 
 import logging
 
 

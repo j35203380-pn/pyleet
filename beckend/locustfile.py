@@ -36,6 +36,7 @@ class LeetUser(HttpUser):
 
         if reg.status_code!=200:
             print("REGISTER FAILED", reg.status_code,reg.text)
+            self.environment.runner.quit()
             return
 
         login=self.client.post("/auth/login", data={

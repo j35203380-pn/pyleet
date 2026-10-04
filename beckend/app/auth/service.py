@@ -1,12 +1,13 @@
 from app.auth.security import hash_password,verify_password,create_token
 from app.auth.repositories import AuthRepositories
-from app.database.db import get_db
+from app.database.db import AsyncLocal
 from dataclasses import dataclass
 from fastapi import status
 from sqlalchemy.exc import IntegrityError
 from app.exceptions import UserNotFound
+from sqlalchemy.ext.asyncio import async_sessionmaker
 import asyncio
-
+import logging
 
 
 @dataclass(slots=True)
@@ -18,19 +19,23 @@ class UserAuthAdd:
     password_confim: str
 
 class UserAuthService:
-    def __init__(self,db,repo: AuthRepositories):
+    def __init__(self,db: async_sessionmaker,repo: AuthRepositories):
         self._db=db
         self._conn=repo
 
 
     async def add_user(self,users: UserAuthAdd):
+        logging.info('запрос принят')
         password_hash=await asyncio.to_thread(hash_password,users.password)
         us=dict(
             name=users.name,nik_name=users.nik_name,
             email=users.email,password=password_hash
             )
         try:
-            async for session in self._db():
+            logging.info("вызываем бд")
+            async with self._db() as session:
+                logging.info("дошел до бд")
+                                
                 repo:AuthRepositories=self._conn(session)
                 await repo.UserAdd(us=us)
             return status.HTTP_200_OK
@@ -39,7 +44,7 @@ class UserAuthService:
             raise UserNotFound()
 
     async def get_user(self,username: str, password: str):
-        async for session in self._db():
+        async with self._db() as session:
             repo: AuthRepositories=self._conn(session)
             id,hash_password=await repo.UserLogin(username=username)
         veryf_password=await asyncio.to_thread(verify_password,hash_password,password)
@@ -51,4 +56,4 @@ class UserAuthService:
         return token
 
 
-auth_service=UserAuthService(get_db,AuthRepositories)
+auth_service=UserAuthService(AsyncLocal,AuthRepositories)

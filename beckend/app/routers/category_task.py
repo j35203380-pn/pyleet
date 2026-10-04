@@ -2,7 +2,7 @@ from fastapi import APIRouter,Depends,BackgroundTasks
 from app.database.db import AsyncSession,get_db
 from app.auth.security import current_token
 from typing import Annotated
-from app.routers.repositories import CategoryRepositories 
+from app.repositories import CategoryRepositories 
 from app.redis_client import RedisConnect,RedisCache
 from redis.asyncio import Redis
 from app.database.shemas.task_shemas import CategoriesItemList, CategoryAllGet

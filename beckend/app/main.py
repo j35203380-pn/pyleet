@@ -2,7 +2,7 @@ from fastapi import FastAPI,Request
 from fastapi.responses import JSONResponse
 from app.auth.auth import router as router_auth
 from contextlib import asynccontextmanager
-from redis.asyncio import Redis,ConnectionPool
+from redis.asyncio import Redis,BlockingConnectionPool
 from config import settings
 from app.routers import approuter as routers_rout
 from app.exceptions import AllExceptions
@@ -11,7 +11,7 @@ from app.redis_client import RateLimite
 from app.Admin.models import UserAdminTask,UserAdminCategory,authenfication_backend
 from sqladmin import Admin
 from app.database.db import engine
-
+from app.broker.connect_broker import broker
 
 
 
@@ -20,10 +20,11 @@ from app.database.db import engine
 @asynccontextmanager
 async def lifespan(app:FastAPI):
        
-        
-    pool=ConnectionPool.from_url(
+    await broker.start()    
+    pool=BlockingConnectionPool.from_url(
         url=settings.REDISE_URL,decode_responses=True,
-        max_connections=50
+        max_connections=100,
+        timeout=5
     )
     
     
@@ -34,7 +35,7 @@ async def lifespan(app:FastAPI):
 
     yield 
     
-    
+    await broker.stop()
     await redis.aclose()
     await pool.aclose()
 
@@ -48,7 +49,7 @@ app.include_router(routers_rout)
 
 
 
-@app.middleware('http')
+#@app.middleware('http')
 async def rate_limite(request: Request,call_next):
     limite=request.app.state.limite
     client=request.client.host if request.client else 'uknown'

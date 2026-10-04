@@ -1,23 +1,23 @@
 from app.database.db import AsyncSession
-from sqlalchemy import select,func
-from sqlalchemy.orm import joinedload,selectinload
+from sqlalchemy import select
 from app.exceptions import TaskNotFoundError                     
 from app.database.models import Task
 import asyncio
 import logging
 
+
 LimitDB=asyncio.Semaphore(20)
 
 
 
-class TaskRepositories:
+class TaskRepo:
 
     def __init__(self, db: AsyncSession):
         self._db=db
 
 
 
-    async def GetTask(self,task_id: int):
+    async def get_task(self,task_id: int):
         logging.info("в процессе GetTask")
 
         async with LimitDB:
@@ -25,8 +25,7 @@ class TaskRepositories:
 
                 task=await self._db.get(Task,task_id)
 
-                if not task:
-                    raise TaskNotFoundError()
+               
         logging.info("GetTask успешно выполнен")
         return task
 
@@ -34,7 +33,7 @@ class TaskRepositories:
 
 
 
-    async def LevelTask(self,level: str):
+    async def level_task(self,level: str):
 
         async with LimitDB:
             task= await self._db.execute(

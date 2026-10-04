@@ -4,7 +4,7 @@ from pydantic import (Field)
 from enum import Enum
 from functools import cached_property
 
-BASE_DIR=Path(__file__).resolve().parent.parent
+BASE_DIR=Path(__file__).resolve().parent
 
 
 class Settings(BaseSettings):

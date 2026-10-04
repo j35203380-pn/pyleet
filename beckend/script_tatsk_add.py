@@ -1,5 +1,5 @@
 from app.database.models import Task,Category
-from app.database.db import AsyncLocal
+from app.database.db import AsyncLocal,test_base
 from sqlalchemy import select,insert
 import logging
 import asyncio
@@ -83,7 +83,9 @@ async def add_task_script(task: dict):
 
 
 async def main():
-
+    
     await add_task_script(task)
 
-asyncio.run(main())
+
+if __name__ == "__main__":
+    asyncio.run(main())
