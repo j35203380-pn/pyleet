@@ -1,14 +1,15 @@
 from fastapi import APIRouter,Depends
+from app.database.db import get_db
 from app.redis_client import RedisCache,RedisConnect
 from app.broker.connect_broker import broker
 from typing import Annotated
-from app.auth.security import current_token
+from app.dependcies.auth import current_token
 from redis.asyncio import Redis,client
 from faststream.rabbit import RabbitQueue,RabbitExchange
 from app.database.shemas.task_shemas import (ExecutionResult,SubmissionCreate,
-                                             SubmissionAccepted,SubmissionListItemGet,
-                                             ExecutionRequest,TaskDetailGet,TaskDetailGetAll)
-from app.service import sol_service,task_serv,SolutionService,TaskService
+                                             SubmissionAccepted,TaskDetailGetAll)
+from app.service import SolutionService,TaskService
+from app.repositories import UserSubRepo,TaskRepo
 from uuid import UUID,uuid4
 from app.routers.service import message_service
 import asyncio
@@ -17,6 +18,10 @@ import msgspec
 
 encodermg=msgspec.json.Encoder()
 
+
+
+
+
 router=APIRouter(prefix='/solution',
                  tags=['Решать Задачи'],
                  dependencies=[Depends(current_token)])
@@ -24,11 +29,13 @@ router=APIRouter(prefix='/solution',
 
 redis= Annotated[Redis,Depends(RedisConnect)]
 
-def solution_service():
-    return sol_service
+def solution_service(db=Depends(get_db)):
+    repo=UserSubRepo(db)
+    return SolutionServ(repo)
 
-def task_service():
-    return task_serv
+def task_service(db=Depends(get_db)):
+    repo=TaskRepo(db)
+    return TaskService(repo)
 
 
 def connect_red(r: redis):

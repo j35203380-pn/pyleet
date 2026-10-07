@@ -1,4 +1,4 @@
-from app.database.db import AsyncSession
+from app.repositories.base import BaseRepository
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload,selectinload
 from app.exceptions import CategoryNotFound                  
@@ -7,19 +7,14 @@ import asyncio
 
 
 
-LimitDB=asyncio.Semaphore(20)
+_semaphore=asyncio.Semaphore(20)
 
 
 
-class CategoryRepositories:
-
-    def __init__(self, db: AsyncSession):
-        self._db=db
-
-
+class CategoryRepositories(BaseRepository):
 
     async def CategoriesGet(self,cat_id: int):
-        async with LimitDB:
+        async with _semaphore:
             
             cat=await self._db.execute(
                 select(Category)
@@ -36,7 +31,7 @@ class CategoryRepositories:
 
 
     async def CategoriesAll(self):
-        async with LimitDB:
+        async with _semaphore:
             c=await self._db.execute(
                 select(Category)
             )

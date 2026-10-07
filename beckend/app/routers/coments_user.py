@@ -1,10 +1,11 @@
 from app.database.shemas.task_shemas import CommentsCreate,CommetnsGet
 from fastapi import APIRouter,Depends,status
 from app.database.db import AsyncSession,get_db
-from app.auth.security import current_token
+from app.dependcies.auth import current_token
 from typing import Annotated
 from app.repositories import CommRepositories 
 import logging
+
 
 
 routers = APIRouter(prefix='/coments',
@@ -18,7 +19,11 @@ def connect_db(db : AsyncSession= Depends(get_db)):
     return CommRepositories(db)
 
 
-CurrenUser = Annotated[dict,Depends(current_token)]
+
+
+
+
+CurrenUser = Annotated[dict, Depends(current_token)]
 PostDb = Annotated[CommRepositories,Depends(connect_db)]
 
 

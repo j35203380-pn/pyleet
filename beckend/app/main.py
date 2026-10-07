@@ -1,6 +1,6 @@
 from fastapi import FastAPI,Request
 from fastapi.responses import JSONResponse
-from app.auth.auth import router as router_auth
+from app.auth.api.auth import router as router_auth
 from contextlib import asynccontextmanager
 from redis.asyncio import Redis,BlockingConnectionPool
 from config import settings

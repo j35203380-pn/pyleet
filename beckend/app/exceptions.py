@@ -29,3 +29,7 @@ class CategoryNotFound(AllExceptions):
     def __init__(self):
         super().__init__(status_code=404, detail='категории не найдены')
 
+
+class UserTokenError(AllExceptions):
+    def __init__(self, status_code, detail=None, headers=None):
+        super().__init__(status_code=400,detail='зайдите снова')

@@ -1,6 +1,6 @@
 from fastapi import APIRouter,Depends
 from app.database.db import AsyncSession,get_db
-from app.auth.security import current_token
+from app.dependcies.auth import current_token
 from typing import Annotated
 from app.repositories import TaskRepo 
 from app.redis_client import RedisConnect,RedisCache
@@ -24,6 +24,7 @@ def connect_redis(redis: Annotated[Redis, Depends(RedisConnect)]):
         redis=redis,
         prefix='tasks',
     )
+
 
 
 CurrenUser = Annotated[dict,Depends(current_token)]

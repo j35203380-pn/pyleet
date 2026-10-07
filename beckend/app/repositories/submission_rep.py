@@ -1,4 +1,4 @@
-from app.database.db import AsyncSession
+from app.repositories.base import BaseRepository
 from sqlalchemy import insert
 from app.database.models import Submission,OutboxSub
 import asyncio
@@ -9,12 +9,7 @@ _semaphore=asyncio.Semaphore(20)
 
 
 
-class UserSubRepo:
-
-    def __init__(self, db: AsyncSession):
-        self._db=db
-
-
+class UserSubRepo(BaseRepository):
 
     async def submis_add(self,users: SubPostAdd):
         

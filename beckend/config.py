@@ -33,7 +33,8 @@ class Settings(BaseSettings):
     secret_key_path : str = Field(validation_alias='JWT_SECRET_KEY')
     public_key_path : str = Field(validation_alias="JWT_PUBLIC_KEY")
     ALGORITHM : str
-
+    ACCESS_TOKEN_EXPIRE: int =60*60
+    REFRESH_TOKEN_EXPIRE: int=60*60*24*30
     
     @cached_property
     def SECRET_KEY(self):

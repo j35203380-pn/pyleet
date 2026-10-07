@@ -1,6 +1,6 @@
 from fastapi import APIRouter,Depends,BackgroundTasks
 from app.database.db import AsyncSession,get_db
-from app.auth.security import current_token
+from app.auth.security import JWTUtils 
 from typing import Annotated
 from app.repositories import CategoryRepositories 
 from app.redis_client import RedisConnect,RedisCache
@@ -26,8 +26,11 @@ def connect_redis(redis: Annotated[Redis, Depends(RedisConnect)]):
         ttl=60
     )
 
+def current_token(redis=Depends(RedisConnect)):
+    return JWTUtils(redis)
 
-CurrenUser = Annotated[dict,Depends(current_token)]
+
+CurrenUser = Annotated[JWTUtils,Depends(current_token)]
 GetDb = Annotated[CategoryRepositories,Depends(connect_db)]
 Cache = Annotated[RedisCache,Depends(connect_redis)]
 

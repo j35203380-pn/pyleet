@@ -1,4 +1,4 @@
-from pydantic import BaseModel,ConfigDict,Field
+from pydantic import BaseModel,ConfigDict,Field,UUID4
 from datetime import datetime
 from config import SubmissionStatus
 from uuid import UUID
@@ -11,7 +11,7 @@ class CommentsCreate(BaseModel):
 
     
 class CommentUserGet(BaseModel):
-    id: int
+    id: UUID4
     name: str
 
 class CommetnsGet(BaseModel):

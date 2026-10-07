@@ -1,4 +1,4 @@
-from app.database.db import AsyncSession
+from app.repositories.base import BaseRepository
 from sqlalchemy import select
 from app.exceptions import TaskNotFoundError                     
 from app.database.models import Task
@@ -6,21 +6,17 @@ import asyncio
 import logging
 
 
-LimitDB=asyncio.Semaphore(20)
+
+_semaphore=asyncio.Semaphore(20)
 
 
 
-class TaskRepo:
-
-    def __init__(self, db: AsyncSession):
-        self._db=db
-
-
+class TaskRepo(BaseRepository):
 
     async def get_task(self,task_id: int):
         logging.info("в процессе GetTask")
 
-        async with LimitDB:
+        async with _semaphore:
             async with self._db.begin():
 
                 task=await self._db.get(Task,task_id)
@@ -35,7 +31,7 @@ class TaskRepo:
 
     async def level_task(self,level: str):
 
-        async with LimitDB:
+        async with _semaphore:
             task= await self._db.execute(
                 select(Task.id,Task.title,Task.difficulty)
                 .where(Task.difficulty == level)

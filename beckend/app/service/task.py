@@ -5,23 +5,19 @@ from app.exceptions import TaskNotFoundError
 
 class TaskService:
 
-    def __init__(self,async_maker: async_sessionmaker,repo: TaskRepo):
-        self._maker=async_maker
-        self._db=repo
+    def __init__(self,repo: TaskRepo):
+
+        self._repo=repo
 
 
     async def get_id(self, task_id: int):
         
-        async with self._maker() as session:
-                repo: TaskRepo=self._db(session)
-                task=await repo.get_task(task_id=task_id)
+        task=await self._repo.get_task(task_id=task_id)
         if not task:
              raise TaskNotFoundError()
         return task
 
 
-
-task_serv=TaskService(AsyncLocal,TaskRepo)
 
         
 
