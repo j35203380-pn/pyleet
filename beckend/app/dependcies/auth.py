@@ -1,4 +1,5 @@
-from app.auth.service.utils import JwtService,expire
+from app.auth.service.utils import JwtService
+from app.auth.settings.base import expire
 from app.auth.security.login import JWTUtils
 from app.redis_client import RedisConnect
 from app.auth.dependcies.auth import oauth_schemas

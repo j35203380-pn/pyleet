@@ -1,9 +1,9 @@
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 
-class TokenTypeEN(str,Enum):
+class TokenTypeEN(StrEnum):
     ACCESS='access'
     REFRESH='refresh'
 
@@ -29,7 +29,7 @@ class ExpireJwtDTO:
 
 
 
-class JWTPayloadEN(str,Enum):
+class PayloadSetEN(StrEnum):
     JTI='jti'
     TYPE='type'
     SUB='sub'
@@ -37,6 +37,18 @@ class JWTPayloadEN(str,Enum):
     NAME='name'
 
 
-class BlackLstMethod(str,Enum):
+
+class PayloadGetEN(StrEnum):
+    ID='id'
+    TYPE='type'
+    NIK_NAME='nik_name'
+    JTI='jti'
+    EXP='exp'
+
+
+                
+class BlackLstMethod(StrEnum):
     ADD='add'
     GET='get'
+
+

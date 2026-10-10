@@ -31,5 +31,7 @@ class CategoryNotFound(AllExceptions):
 
 
 class UserTokenError(AllExceptions):
-    def __init__(self, status_code, detail=None, headers=None):
+    def __init__(self):
         super().__init__(status_code=400,detail='зайдите снова')
+
+

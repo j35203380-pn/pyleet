@@ -1,12 +1,4 @@
 from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError
-
-
-import asyncio
-
-
-
-_semaphore=asyncio.Semaphore(20)
 
 
 ph=PasswordHasher()
@@ -14,15 +6,13 @@ ph=PasswordHasher()
 class CryptoAuth:
 
     @classmethod        
-    def hash_password(cls,password: str):
-        h=ph.hash(password)
-        return h
+    def _hash_(cls,password: bytes):
+        return ph.hash(password)
+        
 
 
     @classmethod
-    def verify_password(cls, hash,password: str):
-        try:
-            ph.verify(hash,password)
-            return True
-        except VerifyMismatchError:
-            return False
+    def _verify_(cls, hash: bytes,password: bytes):
+        
+        return ph.verify(hash,password)
+            

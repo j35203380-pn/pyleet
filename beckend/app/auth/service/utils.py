@@ -1,19 +1,16 @@
 from app.auth.security import JWTUtils
-from app.auth.schemas.auth import PayloadDTO,ExpireJwtDTO,JWTPayloadEN,TokenTypeEN, BlackLstMethod
-from config import settings 
+from app.auth.schemas.auth import (PayloadDTO,PayloadSetEN,TokenTypeEN, 
+                                   BlackLstMethod,PayloadGetEN)
 from jwt.exceptions import InvalidTokenError
 from datetime import datetime,timedelta,timezone
-from redis.asyncio import Redis
 from typing import Literal
 from app.exceptions import UserTokenError
-from fastapi import Depends
+from app.auth.settings.base import SettingsAuthDTO
+from app.auth.ports.cache import Cache
 import uuid, asyncio,time
 
 
 
-#создаем отдлеьное expire  чтобы не вынести все данные оттуда  в класс
-expire=ExpireJwtDTO(access_exp=settings.ACCESS_TOKEN_EXPIRE,
-                    refresh_exp=settings.REFRESH_TOKEN_EXPIRE)
 
 
 
@@ -22,31 +19,34 @@ expire=ExpireJwtDTO(access_exp=settings.ACCESS_TOKEN_EXPIRE,
 class JwtService:
 
     def __init__(self,utils: JWTUtils,
-                 expire: ExpireJwtDTO,
-                 r: Redis):
+                 settings: SettingsAuthDTO,
+                 r: Cache):
         self._jwt=utils
         self._redis=r
-        self._expire=expire
+        self._settings=settings
 
         
     async def create_token(self,payload: PayloadDTO):
         if payload.token_type == TokenTypeEN.ACCESS:
-            minute=self._expire.access_exp
+            second=self._settings.access_exp
         elif payload.token_type == TokenTypeEN.REFRESH:
-            minute=self._expire.refresh_exp
+            second=self._settings.refresh_exp
         else: 
             raise InvalidTokenError
-        expire_token=datetime.now(timezone.utc)+timedelta(minutes=minute)
+        expire_token=datetime.now(timezone.utc)+timedelta(seconds=second)
         
         req={
-            JWTPayloadEN.SUB: str(payload.user_id),
-            JWTPayloadEN.NAME: payload.nik_name,
-            JWTPayloadEN.EXP: expire_token,
-            JWTPayloadEN.TYPE: payload.token_type,
-            JWTPayloadEN.JTI: str(uuid.uuid4())
+            PayloadSetEN.SUB: str(payload.user_id),
+            PayloadSetEN.NAME: payload.nik_name,
+            PayloadSetEN.EXP: expire_token,
+            PayloadSetEN.TYPE: payload.token_type,
+            PayloadSetEN.JTI: str(uuid.uuid4())
             }
         
-        return await asyncio.to_thread(self._jwt.encode,req)
+        return await asyncio.to_thread(
+                            self._jwt.encode,req,
+                            self._settings.private_key,
+                            self._settings.algorithm)
 
     
     async def _black_list_(self,payload, mode: Literal[BlackLstMethod.ADD,BlackLstMethod.GET]):
@@ -54,10 +54,10 @@ class JwtService:
         if mode not in (BlackLstMethod.ADD, BlackLstMethod.GET):
             raise ValueError(f'Недопустимое значение {mode}. Ожидается `{BlackLstMethod.ADD}` or `{BlackLstMethod.GET}`!')
         
-        key=f"black_list:{payload[JWTPayloadEN.JTI]}"
+        key=f"black_list:{payload[PayloadSetEN.JTI]}"
         
         if mode == BlackLstMethod.ADD:
-            ttl=int(payload[JWTPayloadEN.EXP]-time.time())
+            ttl=int(payload[PayloadSetEN.EXP]-time.time())
             if ttl>0:
                 await self._redis.set(key,1,ttl)
 
@@ -71,19 +71,22 @@ class JwtService:
 
     async def current_token(self,token: str):
         try:
-            payload=await asyncio.to_thread(self._jwt.decode,token)
+            payload=await asyncio.to_thread(
+                                self._jwt.decode,token,
+                                self._settings.public_key,
+                                self._settings.algorithm)
 
             if await self._black_list_(payload,mode=BlackLstMethod.GET):
                 raise UserTokenError()
             
-            if payload.get(JWTPayloadEN.TYPE)!=TokenTypeEN.ACCESS:
+            if payload.get(PayloadSetEN.TYPE)!=TokenTypeEN.ACCESS:
                 raise InvalidTokenError()
 
-            return {'id': uuid.UUID(payload[JWTPayloadEN.SUB]),
-                    'type': payload[JWTPayloadEN.TYPE],
-                    'nik_name': payload[JWTPayloadEN.NAME],
-                    'jti': payload[JWTPayloadEN.JTI],
-                    'exp': payload[JWTPayloadEN.EXP]}
+            return {PayloadGetEN.ID: uuid.UUID(payload[PayloadSetEN.SUB]),
+                    PayloadGetEN.TYPE: payload[PayloadSetEN.TYPE],
+                    PayloadGetEN.NIK_NAME: payload[PayloadSetEN.NAME],
+                    PayloadGetEN.JTI: payload[PayloadSetEN.JTI],
+                    PayloadGetEN.EXP: payload[PayloadSetEN.EXP]}
                 
         except:
             raise InvalidTokenError()
@@ -93,7 +96,7 @@ class JwtService:
     async def logout(self,payload):
         await self._black_list_(payload=payload,mode=BlackLstMethod.ADD)
         if await self._black_list_(payload,mode=BlackLstMethod.GET):
-            return True
+            return f'Вы успешно вышли'
         else:
             raise f'Не удалось выйти попробуйте еще раз!'
         
