@@ -30,6 +30,11 @@ class User(Base):
     submissions: Mapped[list['Submission']] = relationship(back_populates='user')
     comments: Mapped[list['Comments']] = relationship(back_populates='users')
     sessions: Mapped[list['Session']] = relationship(back_populates='user')
+    totp: Mapped['UserTOTP'] = relationship(back_populates='user',uselist=False)
+
+
+
+
 
 
 
@@ -56,3 +61,17 @@ class Session(Base):
 
 
 
+
+class UserTOTP(Base):
+    __tablename__ = 'user_2fa_totp_auth'
+
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('users.id',ondelete='CASCADE'),primary_key=True)
+    
+    secret: Mapped[bytes] = mapped_column(LargeBinary,nullable=False)
+    enable: Mapped[bool] = mapped_column(BOOLEAN,default=False)
+    last_used_step: Mapped[int] = mapped_column(default=0,nullable=False)
+    failed_attempts: Mapped[int]= mapped_column(default=0)
+    locked_until: Mapped[datetime] = mapped_column(DateTime(timezone=True),nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),server_default=func.now())
+
+    user: Mapped['User'] = relationship(back_populates='totp')

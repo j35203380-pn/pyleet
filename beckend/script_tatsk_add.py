@@ -1,5 +1,5 @@
 from app.database.models import Task,Category
-from app.database.db import AsyncLocal,test_base
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select,insert
 import logging
 import asyncio
@@ -62,8 +62,8 @@ task ={
     }
 
 
-async def add_task_script(task: dict):
-    async with AsyncLocal() as session:
+async def add_task_script(task: dict,ses: AsyncSession):
+    async with ses() as session:
         async with session.begin():
             cat_=await session.execute(
                 select(Category)

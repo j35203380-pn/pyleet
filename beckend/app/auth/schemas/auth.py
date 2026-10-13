@@ -6,6 +6,7 @@ from typing import Literal
 class TokenTypeEN(StrEnum):
     ACCESS='access'
     REFRESH='refresh'
+    TWO_FACT='2fa'
 
 
 
@@ -13,7 +14,7 @@ class TokenTypeEN(StrEnum):
 class PayloadDTO:
     user_id: int
     nik_name: str
-    token_type: Literal[TokenTypeEN.ACCESS,TokenTypeEN.REFRESH]
+    token_type: Literal[TokenTypeEN.ACCESS,TokenTypeEN.REFRESH,TokenTypeEN.TWO_FACT]
 
 
 

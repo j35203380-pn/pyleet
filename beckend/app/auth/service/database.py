@@ -1,8 +1,9 @@
 from app.auth.repositories.db import AuthRepositories,RefreshTokenRepo
-from app.exceptions import UserNotFound,UserTokenError
+from app.exceptions import UserNotFound,UserTokenError,UserIsBlocked
 from app.auth.schemas.token import SessionAddDTO,SessionUpdDTO
-from app.database.models.auth_models import Session
+from app.auth.schemas.database import UserLoginGetDto 
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.database.models import User,Session
 import asyncio,time
 
 _semaphore=asyncio.Semaphore(15)
@@ -35,16 +36,22 @@ class DbService:
             
             
     async def user_login(self,username: str):
-        
+        enable=False
         async with _semaphore:
             async with self._db.begin():
-                user=await self._auth_db.select_user(username)
-                
+                user: User=await self._auth_db.select_user(username)
 
-        if not user:
-            raise UserNotFound()
 
-        return user
+                if not user:
+                    raise UserNotFound()
+                elif user.is_blocked :
+                    return UserLoginGetDto(is_error= UserIsBlocked,passsword_hash=user.password)      
+                if user.totp and user.totp.enable:
+                    enable=True
+        return UserLoginGetDto(user_id=user.id,
+                               nik_name=user.nik_name,
+                               passsword_hash=user.password,
+                               is_totp_enable=enable)
         
 
     async def session_add(self, sessions: SessionAddDTO):
@@ -55,7 +62,7 @@ class DbService:
                     abs_expire=sessions.abs_expire,
                     user_agent=sessions.user_agent,
                     ip_adress=sessions.ip_adress,
-                    token=sessions.token_hash)
+                    token_hash=sessions.token_hash)
         try:
                 
             async with _semaphore:
@@ -69,21 +76,22 @@ class DbService:
 
 
     async def session_validate_tokens(self,token_hash: bytes):
-        
+        error=False
         async with self._db.begin():
             token: Session|None=await self._token_repo.get_session(token_hash)
             
             if not token:
                 raise UserTokenError()
-            
-        if token.revoked:
-            async with self._db.begin():
+                
+            if token.revoked:
                 await self._token_repo.delete_all_sessions(token.user_id)
-            raise UserTokenError()
-            
+                error = UserTokenError
+                
 
-        elif not token.is_active or token.abs_expire<int(time.time()):
-                raise UserTokenError()
+            elif not token.is_active or token.abs_expire<int(time.time()):
+                    error= UserTokenError
+        if error:
+            raise error()
         
         return token 
 
@@ -93,6 +101,7 @@ class DbService:
 
         async with self._db.begin():
             token:Session=await self._token_repo.update_session(token_hash)
+            
             token.token_hash=sess.token_hash
             token.ip_adress=sess.ip_adress
             token.user_agent=sess.user_agent
@@ -106,7 +115,7 @@ class DbService:
         
         async with self._db.begin():
             await self._token_repo.del_session(token_hash)
-        raise UserTokenError()
+        
 
         
             

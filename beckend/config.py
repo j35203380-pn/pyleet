@@ -7,7 +7,7 @@ from cryptography.hazmat.primitives import serialization
 from urllib.parse import quote
 
 
-BASE_DIR=Path(__file__).parent.parent
+BASE_DIR=Path(__file__).parent
 
 
 class Settings(BaseSettings):
@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     SECRET_KEY_PARAPHRASE: SecretStr
     ACCESS_TOKEN_EXPIRE: int =60*60
     REFRESH_TOKEN_EXPIRE: int=60*60*24*30
+    TWO_FACTORY_EXPIRE: int=60*5
+    ENCRYPT_SECRET_KEY: SecretStr
+   
     
     @cached_property
     def SECRET_KEY(self):

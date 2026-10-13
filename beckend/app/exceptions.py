@@ -35,3 +35,29 @@ class UserTokenError(AllExceptions):
         super().__init__(status_code=400,detail='зайдите снова')
 
 
+class TotpNotFound(AllExceptions):
+    def __init__(self):
+        super().__init__(status_code=404, detail='Ошибка,пройдите верификацию заного!')
+
+class TotpLockedUntil(AllExceptions):
+    def __init__(self):
+        super().__init__(status_code = 404, detail='Слишком много попыток!')
+
+
+class TotpErrorUsedTime(AllExceptions):
+    def __init__(self):
+        super().__init__(status_code = 404, detail='Слишком много попыток!')
+
+
+class TotpConflictUser(AllExceptions):
+    def __init__(self):
+        super().__init__(status_code=409, detail='двузфакторная авторизация уже включена')
+
+class TotpErrorCode(AllExceptions):
+    def __init__(self):
+        super().__init__(status_code=404, detail='неправильный код')
+
+
+class UserIsBlocked(AllExceptions):
+    def __init__(self):
+        super().__init__(status_code=429, detail='мы ограничили доступ к вашему аккаунту')

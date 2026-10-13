@@ -8,8 +8,12 @@ jwt_conf=SettingsAuthDTO(
         public_key=settings.PUBLIC_KEY,
         algorithm=settings.ALGORITHM,
         access_exp=settings.ACCESS_TOKEN_EXPIRE,
-        refresh_exp=settings.REFRESH_TOKEN_EXPIRE)
+        refresh_exp=settings.REFRESH_TOKEN_EXPIRE,
+        two_factory=settings.TWO_FACTORY_EXPIRE)
 
 
 expire=ExpireJwtDTO(access_exp=settings.ACCESS_TOKEN_EXPIRE,
                     refresh_exp=settings.REFRESH_TOKEN_EXPIRE)
+
+
+secret_totp=settings.ENCRYPT_SECRET_KEY

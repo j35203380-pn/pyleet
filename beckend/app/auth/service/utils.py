@@ -11,11 +11,6 @@ import uuid, asyncio,time
 
 
 
-
-
-
-
-
 class JwtService:
 
     def __init__(self,utils: JWTUtils,
@@ -31,6 +26,8 @@ class JwtService:
             second=self._settings.access_exp
         elif payload.token_type == TokenTypeEN.REFRESH:
             second=self._settings.refresh_exp
+        elif payload.token_type== TokenTypeEN.TWO_FACT:
+            second=self._settings.two_factory
         else: 
             raise InvalidTokenError
         expire_token=datetime.now(timezone.utc)+timedelta(seconds=second)
@@ -91,6 +88,49 @@ class JwtService:
         except:
             raise InvalidTokenError()
 
+
+
+
+    async def refresh_token(self,token: str):
+        try:
+            payload=await asyncio.to_thread(
+                                self._jwt.decode,token,
+                                self._settings.public_key,
+                                self._settings.algorithm)
+
+            
+            if payload.get(PayloadSetEN.TYPE)!=TokenTypeEN.REFRESH:
+                raise InvalidTokenError()
+
+            return {PayloadGetEN.ID: uuid.UUID(payload[PayloadSetEN.SUB]),
+                    PayloadGetEN.TYPE: payload[PayloadSetEN.TYPE],
+                    PayloadGetEN.NIK_NAME: payload[PayloadSetEN.NAME],
+                    PayloadGetEN.JTI: payload[PayloadSetEN.JTI],
+                    PayloadGetEN.EXP: payload[PayloadSetEN.EXP]}
+                
+        except:
+            raise InvalidTokenError()
+
+
+    async def _2fa_token(self,token: str):
+        try:
+            payload=await asyncio.to_thread(self._jwt.decode,token,
+                                           self._settings.public_key,
+                                           self._settings.algorithm)
+
+            if await self._black_list_(payload,mode=BlackLstMethod.GET):
+                raise UserTokenError()
+            
+            if payload.get(PayloadSetEN.TYPE)!=TokenTypeEN.TWO_FACT:
+                raise InvalidTokenError()
+
+            return {PayloadGetEN.ID: uuid.UUID(payload[PayloadSetEN.SUB]),
+                    PayloadGetEN.TYPE: payload[PayloadSetEN.TYPE],
+                    PayloadGetEN.NIK_NAME: payload[PayloadSetEN.NAME],
+                    PayloadGetEN.JTI: payload[PayloadSetEN.JTI],
+                    PayloadGetEN.EXP: payload[PayloadSetEN.EXP]}
+        except:
+            raise InvalidTokenError()
 
     
     async def logout(self,payload):

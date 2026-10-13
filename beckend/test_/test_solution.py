@@ -18,7 +18,6 @@ class Solution:
         return []"""
 
 
-@pytest.mark.asyncio(loop_scope='function')
 async def test_run_task(auth_client: AsyncClient):
     responce=await auth_client.post('/solution/run/1',
                                json={'code':sol})
@@ -36,7 +35,6 @@ async def test_run_task(auth_client: AsyncClient):
 
 
 
-@pytest.mark.asyncio(loop_scope='function')
 async def test_submit_task(auth_client: AsyncClient):
     responce=await auth_client.post('/solution/submit/1',
                                json={'code':sol})

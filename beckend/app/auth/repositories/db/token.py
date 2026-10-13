@@ -10,7 +10,7 @@ class RefreshTokenRepo(BaseRepositories):
         
     async def insert_session(self, session):
         
-        await self._db.add(session)
+        self._db.add(session)
 
 
 
@@ -19,7 +19,8 @@ class RefreshTokenRepo(BaseRepositories):
         
         t=await self._db.execute(
                 select(Session)
-                    .where(Session.token_hash == token_hash))
+                    .where(Session.token_hash == token_hash)
+                    .with_for_update())
             
         token=t.scalar_one_or_none()
         return token
@@ -28,9 +29,11 @@ class RefreshTokenRepo(BaseRepositories):
     async def update_session(self,token_hash):
         t=await self._db.execute(
             select(Session)
-                .where(Session.token_hash==token_hash))
+                .where(Session.token_hash==token_hash)
+                .with_for_update())
 
         token=t.scalar_one_or_none()
+        return token
 
 
     async def delete_all_sessions(self,user_id):

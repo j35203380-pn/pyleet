@@ -57,6 +57,7 @@ multipart==2.0.1
 orjson==3.13.0
 packaging==26.3
 pamqp==4.0.1
+pillow==12.3.0
 pluggy==1.6.0
 propcache==0.5.2
 psutil==7.2.2
@@ -68,6 +69,7 @@ pydantic-settings==2.15.0
 pydantic_core==2.46.4
 Pygments==2.21.0
 PyJWT==2.13.0
+PyOTP==2.10.0
 pytest==9.1.1
 pytest-asyncio==1.4.0
 python-dotenv==1.2.2
@@ -76,6 +78,7 @@ python-multipart==0.0.32
 python-socketio==5.16.4
 pytz==2026.5
 pyzmq==27.2.0
+qrcode==8.2
 redis==8.1.0
 repoze-lru==0.8
 requests==2.34.2

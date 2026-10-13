@@ -1,6 +1,7 @@
 from fastapi import FastAPI,Request
 from fastapi.responses import JSONResponse
-from app.auth.api.auth import router as router_auth
+from app.auth.api import router as router_auth
+from app.auth.api.totp import router as router_totp
 from contextlib import asynccontextmanager
 from redis.asyncio import Redis,BlockingConnectionPool
 from config import settings
@@ -12,6 +13,7 @@ from app.Admin.models import UserAdminTask,UserAdminCategory,authenfication_back
 from sqladmin import Admin
 from app.database.db import engine
 from app.broker.connect_broker import broker
+import app.database.models
 
 
 
@@ -44,7 +46,7 @@ app=FastAPI(lifespan=lifespan)
 
 app.include_router(router_auth)
 app.include_router(routers_rout)
-
+app.include_router(router_totp)
 
 
 

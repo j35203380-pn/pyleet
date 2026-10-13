@@ -3,7 +3,6 @@ import pytest
 
 
 
-@pytest.mark.asyncio(loop_scope='function')
 async def test_category_get(client: AsyncClient):
     responce=await client.get('/category/all')
 
@@ -11,7 +10,6 @@ async def test_category_get(client: AsyncClient):
 
 
 
-@pytest.mark.asyncio(loop_scope='function')
 async def test_get_task(client: AsyncClient):
     responce=await client.get('/category/task/1')
 

@@ -1,6 +1,6 @@
 from redis.asyncio import Redis
 from app.auth.schemas.token import TokenCacheDTO
-from uuid import UUID
+from app.auth.settings.base import expire
 import orjson,time
 
 
@@ -38,9 +38,9 @@ class TokenService:
     async def set_token(self, token_hash: bytes, refresh: TokenCacheDTO):
         
         try:
-            raw=orjson.dumps(token=refresh)
+            raw=orjson.dumps(refresh)
             key=self._key_(token_hash)
-            ttl=refresh.expire_at
+            ttl=expire.refresh_exp
             await self._redis.set(key,raw,ttl)
         
         except Exception as e:

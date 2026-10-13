@@ -9,6 +9,14 @@ import time
 
 
 @dataclass(slots=True)
+class TokenCreateDTO:
+    user_id: UUID
+    nik_name: str
+    ip_adress: str
+    user_agent: str
+
+
+@dataclass(slots=True)
 class SessionAddDTO:
     user_id: UUID
     token_hash: bytes
@@ -33,3 +41,6 @@ class SessionUpdDTO:
     token_hash: bytes
     ip_adress: str
     user_agent: str
+
+
+

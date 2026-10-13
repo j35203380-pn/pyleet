@@ -10,6 +10,7 @@ class SettingsAuthDTO:
     algorithm: str
     access_exp: int
     refresh_exp: int
+    two_factory: int
 
     def __repr__(self):
         return 'Настройки сервиса'
