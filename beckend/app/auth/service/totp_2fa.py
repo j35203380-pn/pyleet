@@ -93,7 +93,7 @@ class UserTotpService:
 
             secret=self.fern.decrypt(totp.secret).decode()
 
-            if pyotp.TOTP(secret.encode()).verify(code,valid_window=1):
+            if not pyotp.TOTP(secret.encode()).verify(code,valid_window=1):
                 totp.failed_attempts+=1
                 if totp.failed_attempts>=self.MAX_ATTEMPTS:
                     totp.locked_until=datetime.now(timezone.utc)+self.LOCK_TIME
@@ -103,13 +103,14 @@ class UserTotpService:
                     err=TotpErrorCode
 
             else:
+                print('авутенфикация прошлав успешно!')
                 totp.last_used_step=int(time.time())
                 totp.locked_until=None
                 totp.failed_attempts=0
                 return f'Аутенфикация прошла успешно!'
 
         if err:
-            return err()
+            raise err()
 
 
     async def get_totp_user(self,user_id: UUID):
